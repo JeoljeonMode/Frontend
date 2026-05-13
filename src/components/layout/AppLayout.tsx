@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useBackend } from '../../hooks/useBackend';
 import { Sidebar } from './Sidebar';
@@ -24,11 +24,12 @@ export function useBackendContext() {
 
 export function AppLayout() {
   const backend = useBackend();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <BackendContext.Provider value={backend}>
-      <div className="monitor-shell">
-        <Sidebar backendConnected={backend.backendConnected} />
+      <div className={`monitor-shell${sidebarOpen ? '' : ' sidebar-collapsed'}`}>
+        <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
         <main className="dashboard">
           <Outlet />
         </main>
