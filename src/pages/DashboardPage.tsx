@@ -1,81 +1,82 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Bed, Bell, CheckCheck, CheckCircle2, CircleDot, MessageCircle, ShieldAlert, ShieldCheck, Siren, UserCheck, UserX, X } from 'lucide-react';
-import { postDemoEvent } from '../api/eventsApi';
-import { VideoFeedPanel } from '../components/VideoFeedPanel';
-import { QAPanel } from '../components/QAPanel';
+import { useNavigate } from 'react-router-dom';
+import { Bell, CheckCheck, Siren, X } from 'lucide-react';
 import { useBackendContext, TopbarSlotContext } from '../components/layout/AppLayout';
 import { useSSE } from '../hooks/useSSE';
-import { formatTime, initialSnapshots, levelMeta, nextScenario, poseLabel, positionLabel } from '../mock/mockData';
+import { formatTime, initialSnapshots, levelMeta, ROOMS } from '../mock/mockData';
 import type { RiskLevel, Snapshot } from '../types';
 
+/* ── 도넛 차트 ── */
+function DonutChart({ danger, caution, normal, size = 110 }: {
+  danger: number; caution: number; normal: number; size?: number;
+}) {
+  const total = danger + caution + normal;
+  const r = size * 0.36;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const strokeW = size * 0.11;
+  const gap = total > 1 ? circumference * 0.018 : 0;
+
+  const segs = [
+    { value: danger,  color: 'var(--danger)' },
+    { value: caution, color: 'var(--caution)' },
+    { value: normal,  color: 'var(--normal)' },
+  ];
+
+  let cumulative = 0;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--line)" strokeWidth={strokeW} />
+      {total > 0 && segs.map((seg, i) => {
+        if (seg.value === 0) { cumulative += 0; return null; }
+        const arc = Math.max((seg.value / total) * circumference - gap, 0);
+        const el = (
+          <circle
+            key={i}
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth={strokeW}
+            strokeDasharray={`${arc} ${circumference}`}
+            strokeDashoffset={-cumulative}
+            strokeLinecap="butt"
+          />
+        );
+        cumulative += (seg.value / total) * circumference;
+        return el;
+      })}
+    </svg>
+  );
+}
+
+
+function roomMaxLevel(bedIds: readonly string[], snaps: Record<string, Snapshot>): RiskLevel {
+  const levels = bedIds.map(id => snaps[id]?.level ?? 'normal');
+  if (levels.includes('danger')) return 'danger';
+  if (levels.includes('caution')) return 'caution';
+  return 'normal';
+}
+
 export function DashboardPage() {
-  const { backendConnected, setBackendConnected, current, setCurrent, events, setEvents, pushSnapshot } = useBackendContext();
-  const [autoRefresh, setAutoRefresh] = useState(!backendConnected);
-  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const { backendConnected, setBackendConnected, events, pushSnapshot } = useBackendContext();
+  const { setTopbarRight } = useContext(TopbarSlotContext);
+  const navigate = useNavigate();
+
+  const [snapshots, setSnapshots] = useState<Record<string, Snapshot>>(
+    Object.fromEntries(initialSnapshots.map(s => [s.bedId, s]))
+  );
   const [unreadIds, setUnreadIds] = useState<string[]>(
-    initialSnapshots.filter((e) => e.level !== 'normal').map((e) => e.id),
+    initialSnapshots.filter(e => e.level !== 'normal').map(e => e.id)
   );
   const [notifOpen, setNotifOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState(initialSnapshots[0].id);
-  const [chatOpen, setChatOpen] = useState(false);
-
-  const onSSEEvent = useCallback((snap: Snapshot) => {
-    pushSnapshot(snap);
-    if (snap.level !== 'normal') setUnreadIds((p) => [snap.id, ...p].slice(0, 12));
-  }, [pushSnapshot]);
-
-  const onSSEDisconnect = useCallback(() => setBackendConnected(false), [setBackendConnected]);
-  useSSE(backendConnected, onSSEEvent, onSSEDisconnect);
-
-  useEffect(() => {
-    setAutoRefresh(!backendConnected);
-  }, [backendConnected]);
-
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const t = setInterval(() => {
-      setScenarioIndex((prev) => {
-        const next = prev + 1;
-        const snap = nextScenario(next);
-        setCurrent(snap);
-        setEvents((items) => [snap, ...items].slice(0, 8));
-        if (snap.level !== 'normal') setUnreadIds((p) => [snap.id, ...p].slice(0, 12));
-        return next;
-      });
-    }, 6000);
-    return () => clearInterval(t);
-  }, [autoRefresh, setCurrent, setEvents]);
-
-  const riskCounts = useMemo(() => ({
-    danger: events.filter((e) => e.level === 'danger').length,
-    caution: events.filter((e) => e.level === 'caution').length,
-    normal: events.filter((e) => e.level === 'normal').length,
-  }), [events]);
-
-  const handleScenario = async (level: RiskLevel) => {
-    if (backendConnected) { await postDemoEvent(); return; }
-    const idx = initialSnapshots.findIndex((s) => s.level === level);
-    const snap = nextScenario(idx >= 0 ? idx : 0);
-    setCurrent(snap);
-    setEvents((items) => [snap, ...items].slice(0, 8));
-    setSelectedId(snap.id);
-    if (snap.level !== 'normal') { setUnreadIds((p) => [snap.id, ...p].slice(0, 12)); setNotifOpen(true); }
-    setAutoRefresh(false);
-  };
+  const [selectedAlertId, setSelectedAlertId] = useState(events[0]?.id ?? '');
 
   const unreadCount = unreadIds.length;
-  const selectedAlert = events.find((e) => e.id === selectedId) ?? events[0];
-  const LevelIcon = levelMeta[current.level].icon;
-  const { setTopbarRight } = useContext(TopbarSlotContext);
 
-  /* Inject bell into mobile topbar */
   useEffect(() => {
     setTopbarRight(
-      <button
-        className="icon-button alert-trigger mobile-bell"
-        onClick={() => setNotifOpen((v) => !v)}
-        aria-label="알림"
-      >
+      <button className="icon-button alert-trigger mobile-bell" onClick={() => setNotifOpen(v => !v)} aria-label="알림">
         <Bell size={17} />
         {unreadCount > 0 && <span>{unreadCount}</span>}
       </button>
@@ -83,77 +84,163 @@ export function DashboardPage() {
     return () => setTopbarRight(null);
   }, [unreadCount, setTopbarRight]);
 
+  const onSSEEvent = useCallback((snap: Snapshot) => {
+    pushSnapshot(snap);
+    setSnapshots(prev => ({ ...prev, [snap.bedId]: snap }));
+    if (snap.level !== 'normal') setUnreadIds(p => [snap.id, ...p].slice(0, 12));
+  }, [pushSnapshot]);
+
+  useSSE(backendConnected, onSSEEvent, () => setBackendConnected(false));
+
+  const allSnaps = Object.values(snapshots);
+  const stats = useMemo(() => ({
+    total:   allSnaps.length,
+    danger:  allSnaps.filter(s => s.level === 'danger').length,
+    caution: allSnaps.filter(s => s.level === 'caution').length,
+    normal:  allSnaps.filter(s => s.level === 'normal').length,
+  }), [snapshots]);
+
+  const riskCounts = useMemo(() => ({
+    danger:  events.filter(e => e.level === 'danger').length,
+    caution: events.filter(e => e.level === 'caution').length,
+    normal:  events.filter(e => e.level === 'normal').length,
+  }), [events]);
+
+  const selectedAlert = events.find(e => e.id === selectedAlertId) ?? events[0];
+
   const inspectAlert = (id: string) => {
-    setSelectedId(id);
-    setUnreadIds((p) => p.filter((x) => x !== id));
+    setSelectedAlertId(id);
+    setUnreadIds(p => p.filter(x => x !== id));
     setNotifOpen(true);
   };
 
   return (
     <>
-      {/* Header */}
       <header className="dashboard-header">
         <div>
-          <h1>실시간 낙상 위험 대시보드</h1>
-          <span className="timestamp">마지막 업데이트 {formatTime(current.timestamp)}</span>
+          <h1>모니터링 대시보드</h1>
+          <span className="timestamp">실시간 낙상 위험 현황</span>
         </div>
         <div className="header-actions">
-          <button className={autoRefresh ? 'toggle active' : 'toggle'} onClick={() => setAutoRefresh((v) => !v)}>
-            <CircleDot size={14} /> 자동 갱신 #{scenarioIndex + 1}
-          </button>
-          <button className="icon-button alert-trigger" aria-label="알림" onClick={() => setNotifOpen((v) => !v)}>
+          <button className="icon-button alert-trigger" aria-label="알림" onClick={() => setNotifOpen(v => !v)}>
             <Bell size={17} />
             {unreadCount > 0 && <span>{unreadCount}</span>}
           </button>
         </div>
       </header>
 
-      {/* Status bar — replaces the old 4-card summary strip */}
-      <div className={`status-bar ${current.level}`}>
-        <div className={`status-risk ${current.level}`}>
-          <LevelIcon size={20} />
-          <div>
-            <span className="status-risk-label">{levelMeta[current.level].tone}</span>
-            <strong className="status-risk-score">
-              {current.score}<small>/10</small>
-            </strong>
+      {/* 전체 현황 — 도넛 차트 */}
+      <div className="dash-stats">
+        <div className="dash-stats-chart">
+          <DonutChart danger={stats.danger} caution={stats.caution} normal={stats.normal} />
+          <div className="dash-stats-center">
+            <strong>{stats.total}</strong>
+            <span>전체</span>
           </div>
-          <span className={`status-risk-pill ${current.level}`}>{levelMeta[current.level].label}</span>
         </div>
-        <div className="status-sep" />
-        <div className="status-items">
-          <div className="status-item">
-            <span className="status-item-icon"><Bed size={13} /></span>
-            <div>
-              <span className="status-item-label">병상 · 카메라</span>
-              <span className="status-item-value">{current.bedId} · {current.cameraId}</span>
-            </div>
+        <div className="dash-stats-legend">
+          <div className="dash-stat-row danger">
+            <span className="dash-stat-dot danger" />
+            <span className="dash-stat-label">위험</span>
+            <strong>{stats.danger}명</strong>
           </div>
-          <div className="status-sep" />
-          <div className={`status-item${!current.guardrailUp ? ' warn' : ''}`}>
-            <span className="status-item-icon">
-              {current.guardrailUp ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}
-            </span>
-            <div>
-              <span className="status-item-label">가드레일</span>
-              <span className="status-item-value">{current.guardrailUp ? '올라감' : '내려감'}</span>
-            </div>
+          <div className="dash-stat-row caution">
+            <span className="dash-stat-dot caution" />
+            <span className="dash-stat-label">주의</span>
+            <strong>{stats.caution}명</strong>
           </div>
-          <div className="status-sep" />
-          <div className={`status-item${!current.caregiverPresent ? ' warn' : ''}`}>
-            <span className="status-item-icon">
-              {current.caregiverPresent ? <UserCheck size={13} /> : <UserX size={13} />}
-            </span>
-            <div>
-              <span className="status-item-label">보호 인력</span>
-              <span className="status-item-value">{current.caregiverPresent ? '감지됨' : '미감지'}</span>
-            </div>
+          <div className="dash-stat-row normal">
+            <span className="dash-stat-dot normal" />
+            <span className="dash-stat-label">정상</span>
+            <strong>{stats.normal}명</strong>
           </div>
         </div>
       </div>
 
-      {/* Notification drawer */}
-      {notifOpen && (
+      {/* 병실별 현황 카드 */}
+      <div className="dash-rooms">
+        {ROOMS.map(room => {
+          const roomSnaps = room.bedIds.map(id => snapshots[id]).filter(Boolean) as Snapshot[];
+          const maxLevel = roomMaxLevel(room.bedIds, snapshots);
+          const dangerCnt  = roomSnaps.filter(s => s.level === 'danger').length;
+          const cautionCnt = roomSnaps.filter(s => s.level === 'caution').length;
+          const normalCnt  = roomSnaps.filter(s => s.level === 'normal').length;
+          return (
+            <div key={room.id} className="room-card">
+              <div className="room-card-header">
+                <div className="room-card-title">
+                  <strong>{room.label}</strong>
+                  <span className="room-card-cam">{room.cameraId}</span>
+                </div>
+                <div className="room-card-chart">
+                  <DonutChart danger={dangerCnt} caution={cautionCnt} normal={normalCnt} size={54} />
+                  <div className="room-card-chart-legend">
+                    {dangerCnt  > 0 && <span className="rcc-item danger">{dangerCnt} 위험</span>}
+                    {cautionCnt > 0 && <span className="rcc-item caution">{cautionCnt} 주의</span>}
+                    {normalCnt  > 0 && <span className="rcc-item normal">{normalCnt} 정상</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="room-card-list">
+                {room.bedIds.map(bedId => {
+                  const snap = snapshots[bedId];
+                  if (!snap) return null;
+                  const Icon = levelMeta[snap.level].icon;
+                  return (
+                    <div key={bedId} className={`room-patient-row ${snap.level}`}>
+                      <Icon size={14} />
+                      <span className="rpr-name">{snap.patientName}</span>
+                      <span className={`rpr-badge ${snap.level}`}>{levelMeta[snap.level].label}</span>
+                      <strong className="rpr-score">{snap.score}점</strong>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="room-card-footer">
+                <button className="room-card-link" onClick={() => navigate(`/beds/${room.bedIds[0]}`)}>
+                  병실 상세 보기 →
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 전체 이벤트 이력 */}
+      <section className="dash-events">
+        <article className="panel">
+          <div className="panel-header">
+            <h2>전체 이벤트 이력</h2>
+            <div className="count-group">
+              <span className="danger">{riskCounts.danger}</span>
+              <span className="caution">{riskCounts.caution}</span>
+              <span className="normal">{riskCounts.normal}</span>
+            </div>
+          </div>
+          <div className="event-table">
+            {events.length === 0 && (
+              <div style={{ padding: '28px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                이벤트 이력이 없습니다.
+              </div>
+            )}
+            {events.map(e => (
+              <button className="event-row" key={e.id} onClick={() => inspectAlert(e.id)}>
+                <span className={`event-dot ${e.level}`} style={{ flexShrink: 0 }} />
+                <div>
+                  <strong>{e.summary}</strong>
+                  <span>{formatTime(e.timestamp)} · {e.patientName} · {e.factors.join(', ') || '정상'}</span>
+                </div>
+                <em>{levelMeta[e.level].label}</em>
+              </button>
+            ))}
+          </div>
+        </article>
+      </section>
+
+      {/* 알림 드로어 */}
+      {notifOpen && selectedAlert && (
         <aside className="notification-drawer">
           <div className="drawer-header">
             <div><h2>알림</h2></div>
@@ -168,12 +255,11 @@ export function DashboardPage() {
             <p>{selectedAlert.factors.join(', ') || '위험 인자 없음'}</p>
             <dl>
               <div><dt>발생 시각</dt><dd>{formatTime(selectedAlert.timestamp)}</dd></div>
-              <div><dt>병상</dt><dd>{selectedAlert.bedId}</dd></div>
               <div><dt>환자</dt><dd>{selectedAlert.patientName}</dd></div>
             </dl>
           </div>
           <div className="notification-list">
-            {events.filter((e) => e.level !== 'normal').map((e) => (
+            {events.filter(e => e.level !== 'normal').map(e => (
               <button className={unreadIds.includes(e.id) ? 'notification-item unread' : 'notification-item'} key={e.id} onClick={() => inspectAlert(e.id)}>
                 <span className={`event-dot ${e.level}`} style={{ flexShrink: 0 }} />
                 <div><strong>{e.summary}</strong><small>{formatTime(e.timestamp)} · {e.factors[0]}</small></div>
@@ -182,84 +268,6 @@ export function DashboardPage() {
           </div>
         </aside>
       )}
-
-      {/* Main workspace */}
-      <section className="dash-workspace">
-        <VideoFeedPanel current={current} onScenario={handleScenario} />
-        <aside className="dash-right">
-          <article className="panel">
-            <div className="panel-header">
-              <h2>위험 인자</h2>
-              <span className="score-badge"><b>{current.score}</b><span style={{ opacity: 0.6, fontSize: '0.82em' }}>/10</span></span>
-            </div>
-            <div className="factor-list">
-              {current.factors.length ? current.factors.map((f) => (
-                <div className="factor-item" key={f}><AlertTriangle size={15} /><span>{f}</span></div>
-              )) : (
-                <div className="factor-item calm"><CheckCircle2 size={15} /><span>현재 감지된 위험 인자가 없습니다.</span></div>
-              )}
-            </div>
-          </article>
-          <article className="panel">
-            <div className="panel-header"><h2>환자 상태</h2></div>
-            <dl className="state-list">
-              <div><dt>관리 환자</dt><dd>{current.patientName}</dd></div>
-              <div><dt>환자 위치</dt><dd>{positionLabel[current.position]}</dd></div>
-              <div><dt>자세 상태</dt><dd>{poseLabel[current.pose]}</dd></div>
-              <div><dt>요약</dt><dd>{current.summary}</dd></div>
-            </dl>
-          </article>
-        </aside>
-      </section>
-
-      {/* Event history — full width */}
-      <section className="dash-events">
-        <article className="panel">
-          <div className="panel-header">
-            <h2>이벤트 이력</h2>
-            <div className="count-group">
-              <span className="danger">{riskCounts.danger}</span>
-              <span className="caution">{riskCounts.caution}</span>
-              <span className="normal">{riskCounts.normal}</span>
-            </div>
-          </div>
-          <div className="event-table">
-            {events.map((e) => (
-              <button className="event-row" key={e.id} onClick={() => inspectAlert(e.id)}>
-                <span className={`event-dot ${e.level}`} style={{ flexShrink: 0 }} />
-                <div>
-                  <strong>{e.summary}</strong>
-                  <span>{formatTime(e.timestamp)} · {e.patientName} · {e.factors.join(', ') || '정상'}</span>
-                </div>
-                <em>{levelMeta[e.level].label}</em>
-              </button>
-            ))}
-          </div>
-        </article>
-      </section>
-
-      {/* Floating Chat FAB */}
-      <button
-        className={`chat-fab${chatOpen ? ' active' : ''}`}
-        onClick={() => setChatOpen((v) => !v)}
-        aria-label="AI 질의응답"
-      >
-        {chatOpen ? <X size={20} /> : <MessageCircle size={20} />}
-      </button>
-
-      {/* Chat Drawer — slides in from right */}
-      <aside className={`chat-drawer${chatOpen ? ' open' : ''}`}>
-        <div className="chat-drawer-head">
-          <div>
-            <strong>AI 상태 질의</strong>
-            <span>현재 병상 상태에 대해 질문하세요</span>
-          </div>
-          <button className="chat-drawer-close" onClick={() => setChatOpen(false)}>
-            <X size={15} />
-          </button>
-        </div>
-        <QAPanel current={current} backendConnected={backendConnected} bare />
-      </aside>
     </>
   );
 }
