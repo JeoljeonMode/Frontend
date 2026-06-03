@@ -255,6 +255,28 @@ button {
   display: none;
 }
 
+/* Collapsed: center-align top toggle to match nav icons */
+.control-rail.collapsed .sidebar-top {
+  justify-content: center;
+  padding: 0;
+}
+
+/* Collapsed: hide user name and logout text */
+.control-rail.collapsed .sidebar-user {
+  display: none;
+}
+
+.control-rail.collapsed .sidebar-logout span {
+  display: none;
+}
+
+.control-rail.collapsed .sidebar-logout {
+  justify-content: center;
+  padding: 0;
+  width: 40px;
+  align-self: center;
+}
+
 /* Nav section label */
 .nav-section-label {
   color: var(--rail-text-muted);
@@ -630,7 +652,7 @@ button {
 
 .alert-detail {
   display: grid;
-  gap: 11px;
+  gap: 10px;
   margin-bottom: 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -640,14 +662,15 @@ button {
 
 .alert-detail strong {
   color: var(--text);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: pre-line;
 }
 
 .alert-detail p {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.5;
   margin-bottom: 0;
 }
@@ -694,15 +717,14 @@ button {
 .alert-detail dt {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .alert-detail dd {
   margin: 3px 0 0;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -745,9 +767,10 @@ button {
 
 .notification-item strong {
   color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: pre-line;
 }
 
 .notification-item small {
@@ -1167,17 +1190,17 @@ button {
   font-weight: 500;
 }
 
-/* 오른쪽 점수 */
+/* 오른쪽 점수 — 숫자와 "점" 한 줄 */
 .patient-card-score {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: baseline;
   flex-shrink: 0;
-  gap: 0;
+  gap: 1px;
 }
 
 .patient-card-score strong {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
@@ -1185,7 +1208,7 @@ button {
 }
 
 .patient-card-score span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   font-weight: 500;
 }
@@ -1944,9 +1967,7 @@ button {
 }
 
 .chat-fab.active {
-  background: #1e293b;
-  box-shadow: 0 4px 16px rgba(15, 25, 35, 0.28);
-  transform: rotate(90deg);
+  display: none;
 }
 
 /* ─────────────────────────────────────────────
@@ -2361,20 +2382,77 @@ button {
 .event-log-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
+  gap: 12px;
+  padding: 13px 18px;
   border-bottom: 1px solid var(--line);
-  min-height: 52px;
   transition: background 0.1s;
   cursor: pointer;
 }
 
-.event-log-row:last-child {
-  border-bottom: none;
+.event-log-row:last-child { border-bottom: none; }
+.event-log-row:hover { background: var(--surface-soft); }
+
+.elr-dot { flex-shrink: 0; }
+
+.elr-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
 }
 
-.event-log-row:hover {
-  background: var(--surface-soft);
+.elr-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.elr-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.elr-score {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.elr-factors {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.elr-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.elr-time {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.elr-no {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 /* 행 왼쪽 상태 표시 */
@@ -2900,17 +2978,66 @@ button {
   .room-selector { gap: 6px; }
   .room-tab { padding: 0 12px; height: 36px; font-size: 12.5px; }
 
-  .patient-selector { gap: 8px; }
-  .patient-card { min-width: 0; flex: 1; padding: 10px 12px; gap: 10px; }
-  .patient-card-info strong { font-size: 13px; }
+  /* 환자 선택기: 가로 스크롤 + 카드 세로 배치 */
+  .patient-selector {
+    gap: 8px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .patient-selector::-webkit-scrollbar { display: none; }
+
+  /* 모바일 환자 카드: 이름 위 · 점수 아래 세로 배치 */
+  .patient-card {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 80px;
+    flex: 0 0 auto;
+    padding: 10px 10px;
+    gap: 6px;
+  }
+
+  .patient-card-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .patient-card-info {
+    gap: 0;
+    align-items: center;
+  }
+
+  .patient-card-info strong {
+    font-size: 12px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  /* 점수: 숫자와 "점"을 같은 줄에 */
+  .patient-card-score {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 1px;
+  }
+
+  .patient-card-score strong {
+    font-size: 15px;
+  }
+
+  /* 모바일 입력창 확대 방지 (iOS: font-size < 16px이면 자동 확대) */
+  .question-form input,
+  input[type="text"],
+  input[type="password"] {
+    font-size: 16px !important;
+  }
   .room-tab-badge { display: none; }
 
-  /* Chat FAB: hide when drawer is open (drawer has its own X) */
-  .chat-fab.active {
-    opacity: 0;
-    pointer-events: none;
-    transform: scale(0.7);
-  }
+  /* chat-fab.active는 전역에서 display:none 처리 */
 
   /* Workspace single column */
   .dash-workspace {
@@ -2970,9 +3097,28 @@ button {
   }
 
   .event-log-row {
-    flex-wrap: wrap;
-    padding: 12px 14px;
-    gap: 8px;
+    padding: 14px 16px;
+    align-items: flex-start;
+  }
+
+  /* 모바일: factors 줄바꿈 허용, elr-meta 간격 확보 */
+  .elr-main { gap: 5px; }
+
+  .elr-factors {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .elr-meta {
+    margin-top: 2px;
+  }
+
+  .elr-time,
+  .elr-no {
+    font-size: 11px;
   }
 
   /* Login */
