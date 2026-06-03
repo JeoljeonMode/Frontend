@@ -1,6 +1,6 @@
 import { Eye } from 'lucide-react';
 import type { RiskLevel, Snapshot } from '../types';
-import { formatTime, levelMeta, poseLabel, positionLabel } from '../mock/mockData';
+import { formatTime, levelMeta } from '../mock/mockData';
 
 interface Props {
   current: Snapshot;
@@ -16,34 +16,17 @@ export function VideoFeedPanel({ current, onScenario }: Props) {
       </div>
 
       <div className={`video-feed ${current.level}`}>
-        <div className="camera-overlay">
-          <span><Eye size={13} />IMX219 CSI · WARD A</span>
-          <span>{formatTime(current.timestamp)} KST</span>
-        </div>
-        <div className="room-depth">
-          <div className="back-wall">
-            <span className="room-sign">{current.bedId}</span>
-            <span className="wall-monitor">HR 78 · SpO2 97</span>
+        <img src="/ward.png" alt="병실 카메라 피드" className="feed-img" />
+        <div className="feed-overlay">
+          <div className="feed-overlay-left">
+            <span className="feed-badge feed-badge-rec">● REC</span>
+            <span className="feed-badge">
+              <Eye size={11} />
+              IMX219 · WARD A · {current.bedId}
+            </span>
           </div>
-          <div className="floor-plane" />
+          <span className="feed-badge">{formatTime(current.timestamp)} KST</span>
         </div>
-        <div className="bed-frame">
-          <div className="bed-headboard" />
-          <div className="mattress">
-            <div className="pillow" />
-            <div className="blanket" />
-          </div>
-          <span className="bed-label">BED ROI</span>
-          <div className={current.guardrailUp ? 'rail rail-left up' : 'rail rail-left'} />
-          <div className={current.guardrailUp ? 'rail rail-right up' : 'rail rail-right'} />
-          <div className={`patient-marker ${current.position} ${current.pose}`}>
-            <span>{poseLabel[current.pose]}</span>
-          </div>
-        </div>
-        <div className={`detect-box ${current.position}`}><span>Patient</span></div>
-        <div className="roi-zone left">Edge ROI</div>
-        <div className="roi-zone right">Edge ROI</div>
-        <div className="scan-line" />
       </div>
 
       <div className="scenario-buttons">
