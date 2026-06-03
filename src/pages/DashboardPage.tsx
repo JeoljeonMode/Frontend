@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Bed, Bell, CheckCircle2, CheckCheck, CircleDot, ShieldAlert, ShieldCheck, Siren, UserCheck, UserX, X } from 'lucide-react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Bed, Bell, CheckCheck, CheckCircle2, CircleDot, MessageCircle, ShieldAlert, ShieldCheck, Siren, UserCheck, UserX, X } from 'lucide-react';
 import { postDemoEvent } from '../api/eventsApi';
 import { VideoFeedPanel } from '../components/VideoFeedPanel';
 import { QAPanel } from '../components/QAPanel';
-import { useBackendContext } from '../components/layout/AppLayout';
+import { useBackendContext, TopbarSlotContext } from '../components/layout/AppLayout';
 import { useSSE } from '../hooks/useSSE';
 import { formatTime, initialSnapshots, levelMeta, nextScenario, poseLabel, positionLabel } from '../mock/mockData';
 import type { RiskLevel, Snapshot } from '../types';
-
-type ChatMsg = { role: 'user' | 'system'; text: string };
 
 export function DashboardPage() {
   const { backendConnected, setBackendConnected, current, setCurrent, events, setEvents, pushSnapshot } = useBackendContext();
@@ -19,6 +17,7 @@ export function DashboardPage() {
   );
   const [notifOpen, setNotifOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(initialSnapshots[0].id);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const onSSEEvent = useCallback((snap: Snapshot) => {
     pushSnapshot(snap);
@@ -67,6 +66,22 @@ export function DashboardPage() {
   const unreadCount = unreadIds.length;
   const selectedAlert = events.find((e) => e.id === selectedId) ?? events[0];
   const LevelIcon = levelMeta[current.level].icon;
+  const { setTopbarRight } = useContext(TopbarSlotContext);
+
+  /* Inject bell into mobile topbar */
+  useEffect(() => {
+    setTopbarRight(
+      <button
+        className="icon-button alert-trigger mobile-bell"
+        onClick={() => setNotifOpen((v) => !v)}
+        aria-label="알림"
+      >
+        <Bell size={17} />
+        {unreadCount > 0 && <span>{unreadCount}</span>}
+      </button>
+    );
+    return () => setTopbarRight(null);
+  }, [unreadCount, setTopbarRight]);
 
   const inspectAlert = (id: string) => {
     setSelectedId(id);
@@ -76,34 +91,79 @@ export function DashboardPage() {
 
   return (
     <>
+      {/* Header */}
       <header className="dashboard-header">
         <div>
-          <p className="eyebrow">Nursing Home Bed Monitoring</p>
-          <h1>실시간 낙상 위험 감지 대시보드</h1>
+          <h1>실시간 낙상 위험 대시보드</h1>
           <span className="timestamp">마지막 업데이트 {formatTime(current.timestamp)}</span>
         </div>
         <div className="header-actions">
           <button className={autoRefresh ? 'toggle active' : 'toggle'} onClick={() => setAutoRefresh((v) => !v)}>
-            <CircleDot size={16} />자동 갱신 #{scenarioIndex + 1}
+            <CircleDot size={14} /> 자동 갱신 #{scenarioIndex + 1}
           </button>
           <button className="icon-button alert-trigger" aria-label="알림" onClick={() => setNotifOpen((v) => !v)}>
-            <Bell size={19} />
+            <Bell size={17} />
             {unreadCount > 0 && <span>{unreadCount}</span>}
           </button>
         </div>
       </header>
 
+      {/* Status bar — replaces the old 4-card summary strip */}
+      <div className={`status-bar ${current.level}`}>
+        <div className={`status-risk ${current.level}`}>
+          <LevelIcon size={20} />
+          <div>
+            <span className="status-risk-label">{levelMeta[current.level].tone}</span>
+            <strong className="status-risk-score">
+              {current.score}<small>/10</small>
+            </strong>
+          </div>
+          <span className={`status-risk-pill ${current.level}`}>{levelMeta[current.level].label}</span>
+        </div>
+        <div className="status-sep" />
+        <div className="status-items">
+          <div className="status-item">
+            <span className="status-item-icon"><Bed size={13} /></span>
+            <div>
+              <span className="status-item-label">병상 · 카메라</span>
+              <span className="status-item-value">{current.bedId} · {current.cameraId}</span>
+            </div>
+          </div>
+          <div className="status-sep" />
+          <div className={`status-item${!current.guardrailUp ? ' warn' : ''}`}>
+            <span className="status-item-icon">
+              {current.guardrailUp ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}
+            </span>
+            <div>
+              <span className="status-item-label">가드레일</span>
+              <span className="status-item-value">{current.guardrailUp ? '올라감' : '내려감'}</span>
+            </div>
+          </div>
+          <div className="status-sep" />
+          <div className={`status-item${!current.caregiverPresent ? ' warn' : ''}`}>
+            <span className="status-item-icon">
+              {current.caregiverPresent ? <UserCheck size={13} /> : <UserX size={13} />}
+            </span>
+            <div>
+              <span className="status-item-label">보호 인력</span>
+              <span className="status-item-value">{current.caregiverPresent ? '감지됨' : '미감지'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification drawer */}
       {notifOpen && (
         <aside className="notification-drawer">
           <div className="drawer-header">
-            <div><p className="eyebrow">Notifications</p><h2>알림 확인</h2></div>
+            <div><h2>알림</h2></div>
             <div className="drawer-actions">
-              <button onClick={() => setUnreadIds([])}><CheckCheck size={16} />모두 읽음</button>
-              <button className="drawer-close" onClick={() => setNotifOpen(false)}><X size={18} /></button>
+              <button onClick={() => setUnreadIds([])}><CheckCheck size={15} />모두 읽음</button>
+              <button className="drawer-close" onClick={() => setNotifOpen(false)}><X size={17} /></button>
             </div>
           </div>
           <div className="alert-detail">
-            <span className={`alert-severity ${selectedAlert.level}`}><Siren size={16} />{levelMeta[selectedAlert.level].label}</span>
+            <span className={`alert-severity ${selectedAlert.level}`}><Siren size={14} />{levelMeta[selectedAlert.level].label}</span>
             <strong>{selectedAlert.summary}</strong>
             <p>{selectedAlert.factors.join(', ') || '위험 인자 없음'}</p>
             <dl>
@@ -123,41 +183,25 @@ export function DashboardPage() {
         </aside>
       )}
 
-      <section className="summary-strip">
-        <article className={`risk-card ${current.level}`}>
-          <div className="risk-card-head"><LevelIcon size={24} /><span>{levelMeta[current.level].tone}</span></div>
-          <strong>{levelMeta[current.level].label}</strong>
-          <p>위험 점수 {current.score}점</p>
-        </article>
-        <article className="metric-card"><Bed size={22} /><span>병상 / 카메라</span><strong>{current.bedId} · {current.cameraId}</strong></article>
-        <article className="metric-card">
-          {current.guardrailUp ? <ShieldCheck size={22} /> : <ShieldAlert size={22} />}
-          <span>가드레일</span><strong>{current.guardrailUp ? '올라감' : '내려감'}</strong>
-        </article>
-        <article className="metric-card">
-          {current.caregiverPresent ? <UserCheck size={22} /> : <UserX size={22} />}
-          <span>보호 인력</span><strong>{current.caregiverPresent ? '감지됨' : '미감지'}</strong>
-        </article>
-      </section>
-
-      <section className="workspace">
+      {/* Main workspace */}
+      <section className="dash-workspace">
         <VideoFeedPanel current={current} onScenario={handleScenario} />
-        <aside className="analysis-stack">
+        <aside className="dash-right">
           <article className="panel">
             <div className="panel-header">
-              <div><p className="eyebrow">Risk Factors</p><h2>위험 인자</h2></div>
+              <h2>위험 인자</h2>
               <span className="score-badge"><b>{current.score}</b><span style={{ opacity: 0.6, fontSize: '0.82em' }}>/10</span></span>
             </div>
             <div className="factor-list">
               {current.factors.length ? current.factors.map((f) => (
-                <div className="factor-item" key={f}><AlertTriangle size={17} /><span>{f}</span></div>
+                <div className="factor-item" key={f}><AlertTriangle size={15} /><span>{f}</span></div>
               )) : (
-                <div className="factor-item calm"><CheckCircle2 size={17} /><span>현재 감지된 위험 인자가 없습니다.</span></div>
+                <div className="factor-item calm"><CheckCircle2 size={15} /><span>현재 감지된 위험 인자가 없습니다.</span></div>
               )}
             </div>
           </article>
           <article className="panel">
-            <div className="panel-header"><div><p className="eyebrow">Snapshot</p><h2>환자 상태</h2></div></div>
+            <div className="panel-header"><h2>환자 상태</h2></div>
             <dl className="state-list">
               <div><dt>관리 환자</dt><dd>{current.patientName}</dd></div>
               <div><dt>환자 위치</dt><dd>{positionLabel[current.position]}</dd></div>
@@ -168,10 +212,11 @@ export function DashboardPage() {
         </aside>
       </section>
 
-      <section className="lower-grid">
+      {/* Event history — full width */}
+      <section className="dash-events">
         <article className="panel">
           <div className="panel-header">
-            <div><p className="eyebrow">Alert History</p><h2>경고 및 이벤트 이력</h2></div>
+            <h2>이벤트 이력</h2>
             <div className="count-group">
               <span className="danger">{riskCounts.danger}</span>
               <span className="caution">{riskCounts.caution}</span>
@@ -191,8 +236,30 @@ export function DashboardPage() {
             ))}
           </div>
         </article>
-        <QAPanel current={current} backendConnected={backendConnected} />
       </section>
+
+      {/* Floating Chat FAB */}
+      <button
+        className={`chat-fab${chatOpen ? ' active' : ''}`}
+        onClick={() => setChatOpen((v) => !v)}
+        aria-label="AI 질의응답"
+      >
+        {chatOpen ? <X size={20} /> : <MessageCircle size={20} />}
+      </button>
+
+      {/* Chat Drawer — slides in from right */}
+      <aside className={`chat-drawer${chatOpen ? ' open' : ''}`}>
+        <div className="chat-drawer-head">
+          <div>
+            <strong>AI 상태 질의</strong>
+            <span>현재 병상 상태에 대해 질문하세요</span>
+          </div>
+          <button className="chat-drawer-close" onClick={() => setChatOpen(false)}>
+            <X size={15} />
+          </button>
+        </div>
+        <QAPanel current={current} backendConnected={backendConnected} bare />
+      </aside>
     </>
   );
 }

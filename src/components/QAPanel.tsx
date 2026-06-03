@@ -8,11 +8,12 @@ interface Props {
   current: Snapshot;
   backendConnected: boolean;
   bedId?: string;
+  bare?: boolean;
 }
 
 type ChatMessage = { role: 'user' | 'system'; text: string };
 
-export function QAPanel({ current, backendConnected, bedId }: Props) {
+export function QAPanel({ current, backendConnected, bedId, bare }: Props) {
   const [question, setQuestion] = useState('');
   const [chat, setChat] = useState<ChatMessage[]>([
     { role: 'system', text: `${current.bedId} 병상의 현재 상태를 질문할 수 있습니다.` },
@@ -31,15 +32,8 @@ export function QAPanel({ current, backendConnected, bedId }: Props) {
     setQuestion('');
   };
 
-  return (
-    <article className="panel question-panel" id="question">
-      <div className="panel-header">
-        <div>
-          <p className="eyebrow">Natural Language Query</p>
-          <h2>상태 질의응답</h2>
-        </div>
-        <Bot size={22} />
-      </div>
+  const content = (
+    <>
       <div className="chat-log">
         {chat.slice(-6).map((msg, i) => (
           <div className={`chat-message ${msg.role}`} key={i}>{msg.text}</div>
@@ -53,6 +47,20 @@ export function QAPanel({ current, backendConnected, bedId }: Props) {
         />
         <button type="submit">질문</button>
       </form>
+    </>
+  );
+
+  if (bare) {
+    return <div className="chat-drawer-body">{content}</div>;
+  }
+
+  return (
+    <article className="panel question-panel" id="question">
+      <div className="panel-header">
+        <h2>상태 질의응답</h2>
+        <Bot size={20} />
+      </div>
+      {content}
     </article>
   );
 }

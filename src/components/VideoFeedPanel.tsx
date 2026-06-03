@@ -11,16 +11,13 @@ export function VideoFeedPanel({ current, onScenario }: Props) {
   return (
     <article className="video-panel" id="live">
       <div className="panel-header">
-        <div>
-          <p className="eyebrow">Live Vision</p>
-          <h2>실시간 영상 및 ROI</h2>
-        </div>
+        <h2>실시간 영상</h2>
         <span className={`level-pill ${current.level}`}>{levelMeta[current.level].label}</span>
       </div>
 
       <div className={`video-feed ${current.level}`}>
         <div className="camera-overlay">
-          <span><Eye size={14} />IMX219 CSI · WARD A</span>
+          <span><Eye size={13} />IMX219 CSI · WARD A</span>
           <span>{formatTime(current.timestamp)} KST</span>
         </div>
         <div className="room-depth">
