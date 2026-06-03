@@ -434,7 +434,7 @@ button {
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .eyebrow {
@@ -759,6 +759,449 @@ button {
 }
 
 /* ─────────────────────────────────────────────
+   DASHBOARD STATS — 도넛 차트
+───────────────────────────────────────────── */
+.dash-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  padding: 20px 28px;
+}
+
+.dash-stats-chart {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-stats-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+
+.dash-stats-center strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stats-center span {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.dash-stats-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dash-stat-dot.danger  { background: var(--danger); }
+.dash-stat-dot.caution { background: var(--caution); }
+.dash-stat-dot.normal  { background: var(--normal); }
+
+.dash-stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 28px;
+}
+
+.dash-stat-row strong {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat-row.danger  strong { color: var(--danger); }
+.dash-stat-row.caution strong { color: var(--caution); }
+.dash-stat-row.normal  strong { color: var(--normal); }
+
+/* Room cards grid */
+.dash-rooms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.room-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+
+.room-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* 헤더: 병실명 + 카메라 + 미니 도넛 */
+.room-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.room-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-card-title strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.room-card-cam {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+/* 미니 도넛 + 레전드 */
+.room-card-chart {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.room-card-chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rcc-item {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.rcc-item.danger  { color: var(--danger); }
+.rcc-item.caution { color: var(--caution); }
+.rcc-item.normal  { color: var(--normal); }
+
+/* 환자 리스트 */
+.room-card-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.room-patient-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  transition: background 0.1s;
+}
+
+.room-patient-row + .room-patient-row {
+  border-top: 1px solid var(--line);
+}
+
+.room-patient-row:hover { background: var(--surface-soft); }
+
+.room-patient-row svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.room-patient-row.danger  svg { color: var(--danger); }
+.room-patient-row.caution svg { color: var(--caution); }
+.room-patient-row.normal  svg { color: var(--normal); }
+
+.rpr-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.rpr-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.rpr-badge.danger  { background: var(--danger-bg);  color: var(--danger); }
+.rpr-badge.caution { background: var(--caution-bg); color: var(--caution); }
+.rpr-badge.normal  { background: var(--normal-bg);  color: var(--normal); }
+
+.rpr-score {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
+}
+
+.room-patient-row.danger  .rpr-score { color: var(--danger); }
+.room-patient-row.caution .rpr-score { color: var(--caution); }
+
+/* 푸터 */
+.room-card-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  background: var(--surface-soft);
+}
+
+.room-card-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.12s;
+}
+
+.room-card-link:hover { opacity: 0.7; }
+
+/* ─────────────────────────────────────────────
+   WARD NAV — 병실 + 환자 통합 선택 영역
+───────────────────────────────────────────── */
+.ward-nav {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px 14px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ward-nav-rooms {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.ward-nav-camera {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+}
+
+/* ── room-selector (legacy, kept for compat) ── */
+.room-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.room-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  box-shadow: var(--shadow-xs);
+}
+
+.room-tab:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.room-tab.active {
+  background: var(--primary-bg);
+  border-color: var(--primary-border);
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.room-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.room-tab-badge.danger  { background: var(--danger-bg);  color: var(--danger); }
+.room-tab-badge.caution { background: var(--caution-bg); color: var(--caution); }
+.room-tab-badge.normal  { background: var(--normal-bg);  color: var(--normal); }
+
+.patient-selector {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.patient-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 160px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--line);
+  background: var(--surface-soft);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.patient-card:hover {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.patient-card.active {
+  background: var(--surface);
+  border-color: var(--primary-border);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.patient-card.active.danger  { border-color: var(--danger-border);  box-shadow: 0 0 0 2px rgba(220,31,38,0.1); }
+.patient-card.active.caution { border-color: var(--caution-border); box-shadow: 0 0 0 2px rgba(196,117,0,0.1); }
+.patient-card.active.normal  { border-color: var(--normal-border);  box-shadow: 0 0 0 2px rgba(13,153,99,0.1); }
+
+/* 왼쪽 아이콘 */
+.patient-card-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.patient-card-icon.danger  { background: var(--danger-bg);  color: var(--danger); }
+.patient-card-icon.caution { background: var(--caution-bg); color: var(--caution); }
+.patient-card-icon.normal  { background: var(--normal-bg);  color: var(--normal); }
+
+.patient-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.patient-card-info strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-card-info span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* 오른쪽 점수 */
+.patient-card-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.patient-card-score strong {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.patient-card-score span {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.patient-card.active.danger  .patient-card-score strong { color: var(--danger); }
+.patient-card.active.caution .patient-card-score strong { color: var(--caution); }
+.patient-card.active.normal  .patient-card-score strong { color: var(--normal); }
+
+/* panel-header with icon */
+.panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ─────────────────────────────────────────────
    STATUS BAR (replaces old summary-strip)
 ───────────────────────────────────────────── */
 .status-bar {
@@ -963,7 +1406,7 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .dash-right {
@@ -1637,13 +2080,44 @@ button {
 }
 
 /* ─────────────────────────────────────────────
-   BEDS PAGE — 병상 목록 그리드
+   BEDS PAGE — 병실 그룹 + 병상 그리드
 ───────────────────────────────────────────── */
+.rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0 24px;
+}
+
+.room-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.room-section-header strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.room-section-header span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
 .beds-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-  padding: 20px 0;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
 }
 
 .bed-card {
@@ -1700,48 +2174,44 @@ button {
 
 .bed-card-body {
   flex: 1;
-  padding: 0 16px 12px;
+  padding: 10px 16px 12px;
 }
 
-.bed-card-body .risk-score {
-  font-size: 32px;
+.bed-card-score-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.bed-card-score-row .risk-score {
+  font-size: 24px;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.bed-card.normal .bed-card-body .risk-score {
-  color: var(--normal);
-}
+.bed-card.normal  .risk-score { color: var(--normal); }
+.bed-card.caution .risk-score { color: var(--caution); }
+.bed-card.danger  .risk-score { color: var(--danger); }
 
-.bed-card.caution .bed-card-body .risk-score {
-  color: var(--caution);
-}
-
-.bed-card.danger .bed-card-body .risk-score {
-  color: var(--danger);
-}
-
-.bed-card-body .risk-factors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 8px;
-}
-
-.bed-card-body .risk-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 22px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
-  color: var(--text-secondary);
-  padding: 0 8px;
-  font-size: 11.5px;
+.bed-card-score-row .risk-score-unit {
+  font-size: 12px;
+  color: var(--muted);
   font-weight: 600;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
+.bed-card-factors {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bed-card-footer {
@@ -1752,28 +2222,35 @@ button {
   align-items: center;
 }
 
-.bed-card-footer span {
-  font-size: 13px;
-  color: var(--muted);
+.bed-card-patient {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
-.bed-card-footer button,
-.bed-card-footer a,
-.bed-card-footer .detail-link {
+.bed-patient-no {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.bed-patient-name {
   font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.bed-card-link {
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--primary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: none;
 }
 
-.bed-card-footer button:hover,
-.bed-card-footer a:hover,
-.bed-card-footer .detail-link:hover {
-  text-decoration: underline;
+.ward-nav-room-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 /* ─────────────────────────────────────────────
@@ -2418,6 +2895,15 @@ button {
     padding: 13px 18px;
     min-height: 52px;
   }
+
+  /* Room / patient selector on mobile */
+  .room-selector { gap: 6px; }
+  .room-tab { padding: 0 12px; height: 36px; font-size: 12.5px; }
+
+  .patient-selector { gap: 8px; }
+  .patient-card { min-width: 0; flex: 1; padding: 10px 12px; gap: 10px; }
+  .patient-card-info strong { font-size: 13px; }
+  .room-tab-badge { display: none; }
 
   /* Chat FAB: hide when drawer is open (drawer has its own X) */
   .chat-fab.active {
