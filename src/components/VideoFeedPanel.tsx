@@ -1,12 +1,14 @@
 import { Eye } from 'lucide-react';
 import type { Snapshot } from '../types';
-import { formatTime, levelMeta } from '../mock/mockData';
+import { formatTime, levelMeta, ROOMS } from '../mock/mockData';
 
 interface Props {
   current: Snapshot;
 }
 
 export function VideoFeedPanel({ current }: Props) {
+  const wardImage = ROOMS.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
+
   return (
     <article className="video-panel" id="live">
       <div className="panel-header">
@@ -15,7 +17,7 @@ export function VideoFeedPanel({ current }: Props) {
       </div>
 
       <div className={`video-feed ${current.level}`}>
-        <img src="/ward.png" alt="병실 카메라 피드" className="feed-img" />
+        <img src={wardImage} alt="병실 카메라 피드" className="feed-img" />
         <div className="feed-overlay">
           <div className="feed-overlay-left">
             <span className="feed-badge feed-badge-rec">● REC</span>
