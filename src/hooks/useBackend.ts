@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchCurrentStatus, fetchEvents, toSnapshot } from '../api/eventsApi';
-import { initialSnapshots } from '../mock/mockData';
+import { initialSnapshots, MOCK_EVENTS } from '../mock/mockData';
 import type { Snapshot } from '../types';
 
 export function useBackend() {
   const [backendConnected, setBackendConnected] = useState(false);
   const [current, setCurrent] = useState<Snapshot>(initialSnapshots[0]);
-  const [events, setEvents] = useState<Snapshot[]>(initialSnapshots);
+  const [events, setEvents] = useState<Snapshot[]>(MOCK_EVENTS);
 
   const pushSnapshot = useCallback((snapshot: Snapshot) => {
     setCurrent(snapshot);

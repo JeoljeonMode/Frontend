@@ -7,7 +7,7 @@ import { QAPanel } from '../components/QAPanel';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { useBackendContext } from '../components/layout/AppLayout';
 import { useSSE } from '../hooks/useSSE';
-import { formatTime, initialSnapshots, levelMeta, ROOMS, poseLabel, positionLabel } from '../mock/mockData';
+import { formatTime, getMockHistory, initialSnapshots, levelMeta, ROOMS, poseLabel, positionLabel } from '../mock/mockData';
 import type { Snapshot } from '../types';
 
 export function BedDetailPage() {
@@ -23,13 +23,13 @@ export function BedDetailPage() {
 
   const mockForBed = initialSnapshots.find(s => s.bedId === bedId) ?? initialSnapshots[0];
   const [current, setCurrent] = useState<Snapshot>(mockForBed);
-  const [history, setHistory] = useState<Snapshot[]>([mockForBed]);
+  const [history, setHistory] = useState<Snapshot[]>(() => getMockHistory(bedId ?? ''));
   const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     const snap = snapshots[bedId ?? ''] ?? mockForBed;
     setCurrent(snap);
-    setHistory([snap]);
+    setHistory(getMockHistory(bedId ?? ''));
   }, [bedId]);
 
   useEffect(() => {
