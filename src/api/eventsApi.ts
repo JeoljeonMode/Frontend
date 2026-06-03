@@ -25,7 +25,8 @@ export interface BedStatus { bedId: string; status: BackendEvent; }
 export function toSnapshot(event: BackendEvent): Snapshot {
   return {
     id: event.id, bedId: event.bedId, cameraId: event.cameraId,
-    patientName: event.patientName, timestamp: event.occurredAt,
+    patientName: event.patientName, patientNo: event.bedId,
+    timestamp: event.occurredAt,
     position: event.patientPosition as PatientPosition,
     pose: event.posture as PoseStatus, guardrailUp: event.guardrailUp,
     caregiverPresent: event.caregiverPresent, score: event.riskScore,

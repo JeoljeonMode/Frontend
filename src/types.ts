@@ -7,6 +7,7 @@ export type Snapshot = {
   bedId: string;
   cameraId: string;
   patientName: string;
+  patientNo: string;
   timestamp: string;
   position: PatientPosition;
   pose: PoseStatus;
