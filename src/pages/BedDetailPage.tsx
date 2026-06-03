@@ -59,47 +59,79 @@ export function BedDetailPage() {
         <RiskBadge level={current.level} />
       </header>
 
-      <section className="workspace">
+      {/* Status bar */}
+      <div className={`status-bar ${current.level}`}>
+        <div className={`status-risk ${current.level}`}>
+          <LevelIcon size={20} />
+          <div>
+            <span className="status-risk-label">{levelMeta[current.level].tone}</span>
+            <strong className="status-risk-score">
+              {current.score}<small>/10</small>
+            </strong>
+          </div>
+          <span className={`status-risk-pill ${current.level}`}>{levelMeta[current.level].label}</span>
+        </div>
+        <div className="status-sep" />
+        <div className="status-items">
+          <div className={`status-item${!current.guardrailUp ? ' warn' : ''}`}>
+            <span className="status-item-icon">
+              {current.guardrailUp ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}
+            </span>
+            <div>
+              <span className="status-item-label">가드레일</span>
+              <span className="status-item-value">{current.guardrailUp ? '올라감' : '내려감'}</span>
+            </div>
+          </div>
+          <div className="status-sep" />
+          <div className={`status-item${!current.caregiverPresent ? ' warn' : ''}`}>
+            <span className="status-item-icon">
+              {current.caregiverPresent ? <UserCheck size={13} /> : <UserX size={13} />}
+            </span>
+            <div>
+              <span className="status-item-label">보호 인력</span>
+              <span className="status-item-value">{current.caregiverPresent ? '감지됨' : '미감지'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main workspace */}
+      <section className="dash-workspace">
         <VideoFeedPanel current={current} onScenario={handleScenario} />
-        <aside className="analysis-stack">
-          <article className={`risk-card ${current.level}`}>
-            <div className="risk-card-head"><LevelIcon size={24} /><span>{levelMeta[current.level].tone}</span></div>
-            <strong>{levelMeta[current.level].label}</strong>
-            <p>위험 점수 {current.score}점</p>
-          </article>
+        <aside className="dash-right">
           <article className="panel">
             <div className="panel-header">
-              <div><p className="eyebrow">Risk Factors</p><h2>위험 인자</h2></div>
-              <span className="score-badge"><b>{current.score}</b><span style={{ opacity: 0.6, fontSize: '0.82em' }}>/10</span></span>
+              <h2>위험 인자</h2>
+              <span className="score-badge">
+                <b>{current.score}</b>
+                <span style={{ opacity: 0.6, fontSize: '0.82em' }}>/10</span>
+              </span>
             </div>
             <div className="factor-list">
               {current.factors.length ? current.factors.map((f) => (
-                <div className="factor-item" key={f}><AlertTriangle size={17} /><span>{f}</span></div>
+                <div className="factor-item" key={f}><AlertTriangle size={15} /><span>{f}</span></div>
               )) : (
-                <div className="factor-item calm"><CheckCircle2 size={17} /><span>현재 감지된 위험 인자가 없습니다.</span></div>
+                <div className="factor-item calm"><CheckCircle2 size={15} /><span>위험 인자 없음</span></div>
               )}
             </div>
           </article>
           <article className="panel">
-            <div className="panel-header"><div><h2>환자 상태</h2></div></div>
+            <div className="panel-header"><h2>환자 상태</h2></div>
             <dl className="state-list">
               <div><dt>관리 환자</dt><dd>{current.patientName}</dd></div>
               <div><dt>위치</dt><dd>{positionLabel[current.position]}</dd></div>
               <div><dt>자세</dt><dd>{poseLabel[current.pose]}</dd></div>
-              <div><dt>가드레일</dt><dd style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {current.guardrailUp ? <><ShieldCheck size={15} />올라감</> : <><ShieldAlert size={15} />내려감</>}
-              </dd></div>
-              <div><dt>보호 인력</dt><dd style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {current.caregiverPresent ? <><UserCheck size={15} />감지됨</> : <><UserX size={15} />미감지</>}
-              </dd></div>
+              <div><dt>가드레일</dt><dd>{current.guardrailUp ? '올라감' : '내려감'}</dd></div>
+              <div><dt>보호 인력</dt><dd>{current.caregiverPresent ? '감지됨' : '미감지'}</dd></div>
             </dl>
           </article>
         </aside>
       </section>
 
-      <section className="lower-grid">
+      {/* Recent events + QA */}
+      <section className="bed-lower">
         <article className="panel">
-          <div className="panel-header"><div><p className="eyebrow">Recent Events</p><h2>최근 이벤트</h2></div></div>
+          <div className="panel-header"><h2>최근 이벤트</h2></div>
           <div className="event-table">
             {history.map((e) => (
               <div className="event-row" key={e.id} style={{ cursor: 'default' }}>

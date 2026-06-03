@@ -29,7 +29,6 @@ export function BedsPage() {
     <>
       <header className="dashboard-header">
         <div>
-          <p className="eyebrow">Bed Management</p>
           <h1>병상 / 카메라 목록</h1>
           <span className="timestamp">{beds.length}개 병상 모니터링 중</span>
         </div>

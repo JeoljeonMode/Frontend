@@ -68,7 +68,6 @@ export function EventLogPage() {
     <>
       <header className="dashboard-header">
         <div>
-          <p className="eyebrow">Event Log</p>
           <h1>이벤트 로그</h1>
           <span className="timestamp">총 {events.length}건</span>
         </div>
@@ -127,14 +126,14 @@ export function EventLogPage() {
         {events.slice(0, page * PAGE_SIZE).map((e) => (
           <div className="event-log-row" key={e.id}>
             <span className={`event-dot ${e.level}`} style={{ flexShrink: 0 }} />
-            <span style={{ color: 'var(--muted)', fontSize: 13, minWidth: 90 }}>{formatDateTime(e.timestamp)}</span>
-            <span style={{ fontWeight: 700, minWidth: 70 }}>{e.bedId}</span>
+            <span style={{ color: 'var(--muted)', fontSize: 12.5, minWidth: 100, fontVariantNumeric: 'tabular-nums' }}>{formatDateTime(e.timestamp)}</span>
+            <span style={{ fontWeight: 600, minWidth: 64, fontSize: 13 }}>{e.bedId}</span>
             <RiskBadge level={e.level} size="sm" />
-            <span style={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>{e.score}점</span>
-            <span style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontWeight: 600, minWidth: 38, textAlign: 'right', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{e.score}점</span>
+            <span style={{ flex: 1, fontSize: 12.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {e.factors.join(' · ') || '이상 없음'}
             </span>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{e.patientName}</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{e.patientName}</span>
           </div>
         ))}
       </div>
