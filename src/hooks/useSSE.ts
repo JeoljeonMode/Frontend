@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BASE_URL } from '../api/client';
+import { BASE_URL, getToken } from '../api/client';
 import { toSnapshot } from '../api/eventsApi';
 import type { Snapshot } from '../types';
 
@@ -10,8 +10,12 @@ export function useSSE(
 ) {
   useEffect(() => {
     if (!enabled) return;
-    console.log('[SSE] 연결 시작:', `${BASE_URL}/sse/status`);
-    const es = new EventSource(`${BASE_URL}/sse/status`);
+    const token = getToken();
+    const url = token
+      ? `${BASE_URL}/sse/status?token=${encodeURIComponent(token)}`
+      : `${BASE_URL}/sse/status`;
+    console.log('[SSE] 연결 시작:', url);
+    const es = new EventSource(url);
 
     es.addEventListener('status', (e: MessageEvent) => {
       try {

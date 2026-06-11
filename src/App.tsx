@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { BedsPage } from './pages/BedsPage';
 import { BedDetailPage } from './pages/BedDetailPage';
 import { EventLogPage } from './pages/EventLogPage';
+import { AdminPage } from './pages/AdminPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
@@ -29,6 +30,7 @@ function AppRoutes() {
         <Route path="beds" element={<BedsPage />} />
         <Route path="beds/:bedId" element={<BedDetailPage />} />
         <Route path="events" element={<EventLogPage />} />
+        <Route path="admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

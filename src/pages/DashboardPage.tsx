@@ -4,7 +4,7 @@ import { Bell, CheckCheck, Siren, X } from 'lucide-react';
 import { useBackendContext, TopbarSlotContext } from '../components/layout/AppLayout';
 import { useSSE } from '../hooks/useSSE';
 import { formatTime, initialSnapshots, levelMeta, ROOMS } from '../mock/mockData';
-import type { RiskLevel, Snapshot } from '../types';
+import type { Snapshot } from '../types';
 
 /* ── 도넛 차트 ── */
 function DonutChart({ danger, caution, normal, size = 110 }: {
@@ -50,13 +50,6 @@ function DonutChart({ danger, caution, normal, size = 110 }: {
   );
 }
 
-
-function roomMaxLevel(bedIds: readonly string[], snaps: Record<string, Snapshot>): RiskLevel {
-  const levels = bedIds.map(id => snaps[id]?.level ?? 'normal');
-  if (levels.includes('danger')) return 'danger';
-  if (levels.includes('caution')) return 'caution';
-  return 'normal';
-}
 
 export function DashboardPage() {
   const { backendConnected, setBackendConnected, events, pushSnapshot } = useBackendContext();
@@ -161,7 +154,6 @@ export function DashboardPage() {
       <div className="dash-rooms">
         {ROOMS.map(room => {
           const roomSnaps = room.bedIds.map(id => snapshots[id]).filter(Boolean) as Snapshot[];
-          const maxLevel = roomMaxLevel(room.bedIds, snapshots);
           const dangerCnt  = roomSnaps.filter(s => s.level === 'danger').length;
           const cautionCnt = roomSnaps.filter(s => s.level === 'caution').length;
           const normalCnt  = roomSnaps.filter(s => s.level === 'normal').length;

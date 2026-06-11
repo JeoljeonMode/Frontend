@@ -1,4 +1,4 @@
-import { Camera, FileClock, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
+import { Camera, FileClock, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Settings, X } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
 
@@ -57,6 +57,12 @@ export function Sidebar({ open, onToggle, mobileOpen, onMobileClose }: Props) {
           <FileClock size={18} />
           <span>이벤트 로그</span>
         </NavLink>
+        {user?.role === 'ADMIN' && (
+          <NavLink to="/admin" title="운영 관리" onClick={onMobileClose}>
+            <Settings size={18} />
+            <span>운영 관리</span>
+          </NavLink>
+        )}
       </nav>
 
       <div className="sidebar-footer">

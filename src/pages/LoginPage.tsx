@@ -47,7 +47,7 @@ export function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
+              placeholder="아이디를 입력하세요"
               required
               autoFocus
             />
@@ -68,10 +68,6 @@ export function LoginPage() {
           </button>
           {error && <div className="login-error">{error}</div>}
         </form>
-
-        <p style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>
-          기본 계정: admin / admin1234
-        </p>
       </div>
     </div>
   );

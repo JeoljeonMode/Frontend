@@ -7,6 +7,7 @@ export interface BackendEvent {
   cameraId: string;
   bedId: string;
   patientName: string;
+  patientNo: string;
   patientPosition: string;
   posture: string;
   guardrailUp: boolean;
@@ -18,6 +19,7 @@ export interface BackendEvent {
   summary: string;
   frameUrl: string | null;
   acknowledged: boolean;
+  acknowledgedAt: string | null;
 }
 
 export interface BedStatus { bedId: string; status: BackendEvent; }
@@ -25,13 +27,14 @@ export interface BedStatus { bedId: string; status: BackendEvent; }
 export function toSnapshot(event: BackendEvent): Snapshot {
   return {
     id: event.id, bedId: event.bedId, cameraId: event.cameraId,
-    patientName: event.patientName, patientNo: event.bedId,
+    patientName: event.patientName, patientNo: event.patientNo || event.bedId,
     timestamp: event.occurredAt,
     position: event.patientPosition as PatientPosition,
     pose: event.posture as PoseStatus, guardrailUp: event.guardrailUp,
     caregiverPresent: event.caregiverPresent, score: event.riskScore,
     level: event.riskLevel.toLowerCase() as RiskLevel,
     factors: event.riskFactors, summary: event.summary,
+    acknowledged: event.acknowledged,
   };
 }
 
@@ -89,4 +92,16 @@ export async function postDemoEvent(): Promise<BackendEvent | null> {
     if (!res.ok) return null;
     return await res.json() as BackendEvent;
   } catch { return null; }
+}
+
+export async function acknowledgeEvent(eventId: string): Promise<boolean> {
+  try {
+    const res = await apiFetch(`/api/events/${eventId}/acknowledge`, {
+      method: 'PATCH',
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) { console.warn('[API] PATCH /api/events/:id/acknowledge 실패:', res.status); return false; }
+    const data = await res.json() as { id: string; acknowledged: boolean };
+    return data.acknowledged;
+  } catch (e) { console.warn('[API] PATCH /api/events/:id/acknowledge 실패', e); return false; }
 }

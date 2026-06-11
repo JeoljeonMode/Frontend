@@ -1,7 +1,11 @@
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8083';
+
+export function getToken(): string | null {
+  return localStorage.getItem('bedsafe_token');
+}
 
 export function authHeaders(): HeadersInit {
-  const token = localStorage.getItem('bedsafe_token');
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

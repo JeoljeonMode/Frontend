@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
-import { fetchEvents, toSnapshot } from '../api/eventsApi';
+import { CheckCheck, RefreshCw } from 'lucide-react';
+import { acknowledgeEvent, fetchEvents, toSnapshot } from '../api/eventsApi';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { useBackendContext } from '../components/layout/AppLayout';
 import { formatDateTime, MOCK_EVENTS, ROOMS } from '../mock/mockData';
@@ -44,6 +44,12 @@ export function EventLogPage() {
   };
 
   useEffect(() => { load(filter); }, [backendConnected]);
+
+  const handleAck = async (id: string) => {
+    const ok = await acknowledgeEvent(id);
+    if (!ok) return;
+    setEvents(prev => prev.map(e => (e.id === id ? { ...e, acknowledged: true } : e)));
+  };
 
   const setF = (key: keyof Filter, value: string) => {
     const next = { ...filter, [key]: value };
@@ -139,6 +145,15 @@ export function EventLogPage() {
               <div className="elr-meta">
                 <span className="elr-time">{formatDateTime(e.timestamp)}</span>
                 <span className="elr-no">{e.patientNo}</span>
+                {backendConnected && (
+                  e.acknowledged ? (
+                    <span className="elr-ack done"><CheckCheck size={12} />처리완료</span>
+                  ) : (
+                    <button className="elr-ack" onClick={() => handleAck(e.id)}>
+                      <CheckCheck size={12} />처리완료
+                    </button>
+                  )
+                )}
               </div>
             </div>
           </div>

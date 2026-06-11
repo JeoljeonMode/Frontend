@@ -17,4 +17,5 @@ export type Snapshot = {
   level: RiskLevel;
   factors: string[];
   summary: string;
+  acknowledged?: boolean;
 };

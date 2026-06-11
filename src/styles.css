@@ -118,7 +118,8 @@ h2 {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -2352,6 +2353,183 @@ button {
   border-color: var(--danger);
 }
 
+/* ─────────────────────────────────────────────
+   ADMIN PAGE
+───────────────────────────────────────────── */
+.admin-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.admin-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.admin-tabs button:hover {
+  background: var(--surface-soft);
+}
+
+.admin-tabs button.active {
+  background: var(--primary-bg);
+  color: var(--primary);
+}
+
+.admin-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin-bottom: 14px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-notice.success {
+  border-color: var(--normal-border);
+  background: var(--normal-bg);
+  color: var(--normal);
+}
+
+.admin-notice.error {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-form-panel,
+.admin-summary-panel {
+  min-width: 0;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+.admin-submit {
+  width: auto;
+  min-width: 150px;
+  padding: 0 18px;
+}
+
+.admin-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-room-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-room-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.admin-room-item div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.admin-room-item strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-room-item span {
+  overflow: hidden;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-room-item em {
+  color: var(--primary);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.admin-empty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 220px;
+  text-align: center;
+}
+
+.admin-empty svg {
+  color: var(--danger);
+}
+
+.admin-empty strong {
+  font-size: 16px;
+}
+
+.admin-empty p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .event-log-table {
   background: white;
   border: 1px solid var(--line);
@@ -2453,6 +2631,32 @@ button {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+}
+
+.elr-ack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.elr-ack:hover {
+  background: var(--surface-soft);
+}
+
+.elr-ack.done {
+  border-color: var(--normal-border);
+  background: var(--normal-bg);
+  color: var(--normal);
 }
 
 /* 행 왼쪽 상태 표시 */
@@ -2570,17 +2774,21 @@ button {
   color: var(--text-secondary);
 }
 
-.form-field input {
+.form-field input,
+.form-field select {
   height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 12px;
+  background: white;
+  color: var(--text);
   font-size: 14px;
   outline: none;
   transition: border-color 0.12s;
 }
 
-.form-field input:focus {
+.form-field input:focus,
+.form-field select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
@@ -3099,6 +3307,20 @@ button {
   .event-log-row {
     padding: 14px 16px;
     align-items: flex-start;
+  }
+
+  .admin-layout,
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-tabs {
+    display: flex;
+  }
+
+  .admin-tabs button {
+    flex: 1 1 140px;
+    justify-content: center;
   }
 
   /* 모바일: factors 줄바꿈 허용, elr-meta 간격 확보 */
