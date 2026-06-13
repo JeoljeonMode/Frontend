@@ -1,37 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CheckCheck, RefreshCw } from 'lucide-react';
 import { acknowledgeEvent, fetchEvents, toSnapshot } from '../api/eventsApi';
 import { RiskBadge } from '../components/common/RiskBadge';
-import { useBackendContext } from '../components/layout/AppLayout';
-import { formatDateTime, MOCK_EVENTS, ROOMS } from '../mock/mockData';
+import { useRooms } from '../hooks/useRooms';
+import { formatDateTime } from '../mock/mockData';
 import type { Snapshot } from '../types';
 
 type Filter = { riskLevel: string; roomId: string; acknowledged: string };
 
-/* 병실별 bedId 목록을 빠르게 조회하기 위한 맵 */
-const roomBedMap: Record<string, string[]> = Object.fromEntries(
-  ROOMS.map(r => [r.id, [...r.bedIds]])
-);
-
 export function EventLogPage() {
-  const { backendConnected } = useBackendContext();
-  const [events, setEvents] = useState<Snapshot[]>(MOCK_EVENTS);
+  const { rooms } = useRooms();
+  const [events, setEvents] = useState<Snapshot[]>([]);
   const [filter, setFilter] = useState<Filter>({ riskLevel: '', roomId: '', acknowledged: '' });
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
+  const roomBedMap = useMemo(
+    () => Object.fromEntries(rooms.map(r => [r.id, r.bedIds])),
+    [rooms],
+  );
 
   const load = async (f: Filter) => {
-    if (!backendConnected) {
-      let filtered = MOCK_EVENTS;
-      if (f.riskLevel) filtered = filtered.filter(e => e.level === f.riskLevel.toLowerCase());
-      if (f.roomId) {
-        const bedIds = roomBedMap[f.roomId] ?? [];
-        filtered = filtered.filter(e => bedIds.includes(e.bedId));
-      }
-      setEvents(filtered);
-      return;
-    }
     setLoading(true);
     const data = await fetchEvents(
       PAGE_SIZE,
@@ -39,11 +28,16 @@ export function EventLogPage() {
       f.riskLevel || undefined,
       f.acknowledged === '' ? undefined : f.acknowledged === 'true',
     );
-    setEvents(data.map(toSnapshot));
+    let next = data.map(toSnapshot);
+    if (f.roomId) {
+      const bedIds = roomBedMap[f.roomId] ?? [];
+      next = next.filter(e => bedIds.includes(e.bedId));
+    }
+    setEvents(next);
     setLoading(false);
   };
 
-  useEffect(() => { load(filter); }, [backendConnected]);
+  useEffect(() => { load(filter); }, [rooms]);
 
   const handleAck = async (id: string) => {
     const ok = await acknowledgeEvent(id);
@@ -99,7 +93,7 @@ export function EventLogPage() {
           <span>병실</span>
           <div>
             <button className={`filter-btn${!filter.roomId ? ' active' : ''}`} onClick={() => setF('roomId', '')}>전체</button>
-            {ROOMS.map(room => (
+            {rooms.map(room => (
               <button
                 key={room.id}
                 className={`filter-btn${filter.roomId === room.id ? ' active' : ''}`}
@@ -111,16 +105,14 @@ export function EventLogPage() {
           </div>
         </div>
 
-        {backendConnected && (
-          <div className="filter-group">
-            <span>처리 여부</span>
-            <div>
-              {[{ v: '', l: '전체' }, { v: 'false', l: '미처리' }, { v: 'true', l: '처리완료' }].map(({ v, l }) => (
-                <button key={v} className={`filter-btn${filter.acknowledged === v ? ' active' : ''}`} onClick={() => setF('acknowledged', v)}>{l}</button>
-              ))}
-            </div>
+        <div className="filter-group">
+          <span>처리 여부</span>
+          <div>
+            {[{ v: '', l: '전체' }, { v: 'false', l: '미처리' }, { v: 'true', l: '처리완료' }].map(({ v, l }) => (
+              <button key={v} className={`filter-btn${filter.acknowledged === v ? ' active' : ''}`} onClick={() => setF('acknowledged', v)}>{l}</button>
+            ))}
           </div>
-        )}
+        </div>
 
         {(filter.riskLevel || filter.roomId || filter.acknowledged) && (
           <button className="filter-btn" onClick={() => {
@@ -132,6 +124,11 @@ export function EventLogPage() {
       </div>
 
       <div className="event-log-table">
+        {events.length === 0 && (
+          <div style={{ padding: '28px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+            이벤트 이력이 없습니다.
+          </div>
+        )}
         {events.slice(0, page * PAGE_SIZE).map(e => (
           <div className="event-log-row" key={e.id}>
             <span className={`event-dot ${e.level} elr-dot`} />
@@ -145,14 +142,12 @@ export function EventLogPage() {
               <div className="elr-meta">
                 <span className="elr-time">{formatDateTime(e.timestamp)}</span>
                 <span className="elr-no">{e.patientNo}</span>
-                {backendConnected && (
-                  e.acknowledged ? (
-                    <span className="elr-ack done"><CheckCheck size={12} />처리완료</span>
-                  ) : (
-                    <button className="elr-ack" onClick={() => handleAck(e.id)}>
-                      <CheckCheck size={12} />처리완료
-                    </button>
-                  )
+                {e.acknowledged ? (
+                  <span className="elr-ack done"><CheckCheck size={12} />처리완료</span>
+                ) : (
+                  <button className="elr-ack" onClick={() => handleAck(e.id)}>
+                    <CheckCheck size={12} />처리완료
+                  </button>
                 )}
               </div>
             </div>

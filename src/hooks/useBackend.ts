@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchCurrentStatus, fetchEvents, toSnapshot } from '../api/eventsApi';
-import { initialSnapshots, MOCK_EVENTS } from '../mock/mockData';
 import type { Snapshot } from '../types';
 
 export function useBackend() {
   const [backendConnected, setBackendConnected] = useState(false);
-  const [current, setCurrent] = useState<Snapshot>(initialSnapshots[0]);
-  const [events, setEvents] = useState<Snapshot[]>(MOCK_EVENTS);
+  const [current, setCurrent] = useState<Snapshot | null>(null);
+  const [events, setEvents] = useState<Snapshot[]>([]);
 
   const pushSnapshot = useCallback((snapshot: Snapshot) => {
     setCurrent(snapshot);
@@ -25,7 +24,7 @@ export function useBackend() {
           setEvents(history.map(toSnapshot));
         }
       } else {
-        console.log('[useBackend] 연결 실패 → Mock 모드');
+        console.log('[useBackend] 연결 실패');
       }
     })();
   }, []);

@@ -1,9 +1,11 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck, Siren, X } from 'lucide-react';
+import { fetchBeds, toSnapshot } from '../api/eventsApi';
 import { useBackendContext, TopbarSlotContext } from '../components/layout/AppLayout';
 import { useSSE } from '../hooks/useSSE';
-import { formatTime, initialSnapshots, levelMeta, ROOMS } from '../mock/mockData';
+import { useRooms } from '../hooks/useRooms';
+import { formatTime, levelMeta } from '../mock/mockData';
 import type { Snapshot } from '../types';
 
 /* ── 도넛 차트 ── */
@@ -54,13 +56,10 @@ export function DashboardPage() {
   const { backendConnected, setBackendConnected, events, pushSnapshot } = useBackendContext();
   const { setTopbarRight } = useContext(TopbarSlotContext);
   const navigate = useNavigate();
+  const { rooms } = useRooms();
 
-  const [snapshots, setSnapshots] = useState<Record<string, Snapshot>>(
-    Object.fromEntries(initialSnapshots.map(s => [s.bedId, s]))
-  );
-  const [unreadIds, setUnreadIds] = useState<string[]>(
-    initialSnapshots.filter(e => e.level !== 'normal').map(e => e.id)
-  );
+  const [snapshots, setSnapshots] = useState<Record<string, Snapshot>>({});
+  const [unreadIds, setUnreadIds] = useState<string[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [selectedAlertId, setSelectedAlertId] = useState(events[0]?.id ?? '');
 
@@ -83,6 +82,13 @@ export function DashboardPage() {
   }, [pushSnapshot]);
 
   useSSE(backendConnected, onSSEEvent, () => setBackendConnected(false));
+
+  useEffect(() => {
+    (async () => {
+      const beds = await fetchBeds();
+      setSnapshots(Object.fromEntries(beds.map(b => [b.bedId, toSnapshot(b.status)])));
+    })();
+  }, []);
 
   const allSnaps = Object.values(snapshots);
   const stats = useMemo(() => ({
@@ -151,11 +157,12 @@ export function DashboardPage() {
 
       {/* 병실별 현황 카드 */}
       <div className="dash-rooms">
-        {ROOMS.map(room => {
+        {rooms.map(room => {
           const roomSnaps = room.bedIds.map(id => snapshots[id]).filter(Boolean) as Snapshot[];
           const dangerCnt  = roomSnaps.filter(s => s.level === 'danger').length;
           const cautionCnt = roomSnaps.filter(s => s.level === 'caution').length;
           const normalCnt  = roomSnaps.filter(s => s.level === 'normal').length;
+          const firstBedId = room.bedIds[0];
           return (
             <div key={room.id} className="room-card">
               <div className="room-card-header">
@@ -174,9 +181,19 @@ export function DashboardPage() {
               </div>
 
               <div className="room-card-list">
+                {room.bedIds.length === 0 && (
+                  <div className="empty-inline">등록된 병상이 없습니다.</div>
+                )}
                 {room.bedIds.map(bedId => {
                   const snap = snapshots[bedId];
-                  if (!snap) return null;
+                  if (!snap) {
+                    return (
+                      <div key={bedId} className="room-patient-row normal">
+                        <span className="rpr-name">{bedId}</span>
+                        <span className="rpr-badge normal">상태 대기</span>
+                      </div>
+                    );
+                  }
                   const Icon = levelMeta[snap.level].icon;
                   return (
                     <div key={bedId} className={`room-patient-row ${snap.level}`}>
@@ -190,8 +207,12 @@ export function DashboardPage() {
               </div>
 
               <div className="room-card-footer">
-                <button className="room-card-link" onClick={() => navigate(`/beds/${room.bedIds[0]}`)}>
-                  병실 상세 보기 →
+                <button
+                  className="room-card-link"
+                  disabled={!firstBedId}
+                  onClick={() => firstBedId && navigate(`/beds/${firstBedId}`)}
+                >
+                  {firstBedId ? '병실 상세 보기 →' : '등록된 병상 없음'}
                 </button>
               </div>
             </div>

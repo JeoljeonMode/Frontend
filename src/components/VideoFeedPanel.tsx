@@ -1,15 +1,17 @@
-import { Eye, ImageOff } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { BASE_URL } from '../api/client';
+import { fallbackRooms, type AppRoom } from '../api/roomsApi';
 import type { Snapshot } from '../types';
-import { formatTime, levelMeta, ROOMS } from '../mock/mockData';
+import { formatTime, levelMeta } from '../mock/mockData';
 
 interface Props {
   current: Snapshot;
+  rooms?: AppRoom[];
 }
 
-export function VideoFeedPanel({ current }: Props) {
-  const wardImage = ROOMS.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
+export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
+  const wardImage = rooms.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
   const [streamFailed, setStreamFailed] = useState(false);
   const streamSrc = useMemo(() => {
     const params = new URLSearchParams({ cameraId: current.cameraId, bedId: current.bedId });
@@ -31,7 +33,7 @@ export function VideoFeedPanel({ current }: Props) {
       <div className={`video-feed ${current.level}`}>
         <img
           src={feedSrc}
-          alt={streamFailed ? '병실 기본 이미지' : '병실 카메라 피드'}
+          alt="병실 카메라 피드"
           className="feed-img"
           onLoad={() => {
             if (streamFailed) return;
@@ -41,18 +43,13 @@ export function VideoFeedPanel({ current }: Props) {
         />
         <div className="feed-overlay">
           <div className="feed-overlay-left">
-            <span className={`feed-badge ${streamFailed ? 'feed-badge-fallback' : 'feed-badge-rec'}`}>
-              {streamFailed ? <ImageOff size={11} /> : '● REC'}
-              {streamFailed ? '기본 이미지' : ''}
-            </span>
+            <span className="feed-badge feed-badge-rec">● REC</span>
             <span className="feed-badge">
               <Eye size={11} />
               {current.cameraId} · WARD A
             </span>
           </div>
-          <span className="feed-badge">
-            {streamFailed ? '영상 수신 대기' : `${formatTime(current.timestamp)} KST`}
-          </span>
+          <span className="feed-badge">{formatTime(current.timestamp)} KST</span>
         </div>
       </div>
     </article>

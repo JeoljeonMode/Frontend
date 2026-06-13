@@ -12,7 +12,6 @@ import {
   type CreateUserPayload,
 } from '../api/adminApi';
 import { useAuth } from '../auth/useAuth';
-import { ROOMS } from '../mock/mockData';
 
 type Tab = 'users' | 'rooms' | 'beds';
 type Notice = { tone: 'success' | 'error'; text: string } | null;
@@ -39,19 +38,10 @@ const initialBed: CreateBedPayload = {
   patientNo: '',
 };
 
-const fallbackRooms: AdminRoom[] = ROOMS.map((room) => ({
-  roomId: room.id,
-  label: room.label,
-  cameraId: room.cameraId,
-  gender: room.gender,
-  capacity: room.capacity,
-  bedIds: [...room.bedIds],
-}));
-
 export function AdminPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('users');
-  const [rooms, setRooms] = useState<AdminRoom[]>(fallbackRooms);
+  const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
@@ -65,7 +55,7 @@ export function AdminPage() {
   const loadRooms = async () => {
     setLoadingRooms(true);
     const data = await fetchAdminRooms();
-    setRooms(data.length ? data : fallbackRooms);
+    setRooms(data);
     setLoadingRooms(false);
   };
 

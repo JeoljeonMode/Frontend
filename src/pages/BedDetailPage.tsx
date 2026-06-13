@@ -7,44 +7,34 @@ import { QAPanel } from '../components/QAPanel';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { useBackendContext } from '../components/layout/AppLayout';
 import { useSSE } from '../hooks/useSSE';
-import { formatTime, getMockHistory, initialSnapshots, levelMeta, ROOMS, poseLabel, positionLabel } from '../mock/mockData';
+import { useRooms } from '../hooks/useRooms';
+import { formatTime, levelMeta, poseLabel, positionLabel } from '../mock/mockData';
 import type { Snapshot } from '../types';
 
 export function BedDetailPage() {
   const { bedId } = useParams<{ bedId: string }>();
   const { backendConnected, setBackendConnected } = useBackendContext();
   const navigate = useNavigate();
+  const { rooms } = useRooms();
 
-  const currentRoom = ROOMS.find(r => r.bedIds.includes(bedId as never)) ?? ROOMS[0];
+  const currentRoom = rooms.find(r => r.bedIds.includes(bedId ?? '')) ?? rooms[0];
 
-  const [snapshots, setSnapshots] = useState<Record<string, Snapshot>>(
-    Object.fromEntries(initialSnapshots.map(s => [s.bedId, s]))
-  );
-
-  const mockForBed = initialSnapshots.find(s => s.bedId === bedId) ?? initialSnapshots[0];
-  const [current, setCurrent] = useState<Snapshot>(mockForBed);
-  const [history, setHistory] = useState<Snapshot[]>(() => getMockHistory(bedId ?? ''));
+  const [snapshots, setSnapshots] = useState<Record<string, Snapshot>>({});
+  const [current, setCurrent] = useState<Snapshot | null>(null);
+  const [history, setHistory] = useState<Snapshot[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
-    const snap = snapshots[bedId ?? ''] ?? mockForBed;
-    setCurrent(snap);
-    setHistory(getMockHistory(bedId ?? ''));
-  }, [bedId]);
-
-  useEffect(() => {
-    if (!backendConnected) return;
     (async () => {
       const beds = await fetchBeds();
-      const next = { ...snapshots };
-      beds.forEach(b => { next[b.bedId] = toSnapshot(b.status); });
+      const next = Object.fromEntries(beds.map(b => [b.bedId, toSnapshot(b.status)]));
       setSnapshots(next);
       const found = next[bedId ?? ''];
-      if (found) setCurrent(found);
+      setCurrent(found ?? null);
       const evts = await fetchEvents(10, bedId);
-      if (evts.length > 0) setHistory(evts.map(toSnapshot));
+      setHistory(evts.map(toSnapshot));
     })();
-  }, [backendConnected, bedId]);
+  }, [bedId]);
 
   const onSSEEvent = useCallback((snap: Snapshot) => {
     setSnapshots(prev => ({ ...prev, [snap.bedId]: snap }));
@@ -56,27 +46,32 @@ export function BedDetailPage() {
 
   useSSE(backendConnected, onSSEEvent, () => setBackendConnected(false));
 
-  const LevelIcon = levelMeta[current.level].icon;
+  const currentLevel = current?.level ?? 'normal';
+  const LevelIcon = levelMeta[currentLevel].icon;
+  const pageTitle = currentRoom?.label ?? bedId ?? '병상 상세';
+  const cameraId = currentRoom?.cameraId ?? current?.cameraId ?? '카메라 미등록';
 
   return (
     <>
       <header className="dashboard-header">
         <div>
           <button className="back-link" onClick={() => navigate('/')}>← 대시보드</button>
-          <h1>{currentRoom.label}</h1>
-          <span className="timestamp">마지막 업데이트 {formatTime(current.timestamp)}</span>
+          <h1>{pageTitle}</h1>
+          <span className="timestamp">
+            {current ? `마지막 업데이트 ${formatTime(current.timestamp)}` : '서버 상태 데이터 수신 대기 중'}
+          </span>
         </div>
-        <RiskBadge level={current.level} />
+        <RiskBadge level={currentLevel} />
       </header>
 
       {/* 병실 내 환자 선택 */}
       <div className="ward-nav">
         <div className="ward-nav-rooms">
-          <span className="ward-nav-room-label"><strong>{currentRoom.label}</strong></span>
-          <span className="ward-nav-camera">{currentRoom.cameraId}</span>
+          <span className="ward-nav-room-label"><strong>{pageTitle}</strong></span>
+          <span className="ward-nav-camera">{cameraId}</span>
         </div>
         <div className="patient-selector">
-          {currentRoom.bedIds.map(bid => {
+          {(currentRoom?.bedIds ?? (bedId ? [bedId] : [])).map(bid => {
             const snap = snapshots[bid];
             const level = snap?.level ?? 'normal';
             const isActive = bid === bedId;
@@ -103,24 +98,36 @@ export function BedDetailPage() {
 
       {/* 메인 워크스페이스 */}
       <section className="dash-workspace">
-        <VideoFeedPanel current={current} />
+        {current ? (
+          <VideoFeedPanel current={current} rooms={rooms} />
+        ) : (
+          <article className="video-panel" id="live">
+            <div className="panel-header">
+              <h2>실시간 영상</h2>
+              <span className="level-pill normal">상태 대기</span>
+            </div>
+            <div className="video-feed normal">
+              <img src={currentRoom?.image ?? '/ward1.png'} alt="병실 카메라 피드" className="feed-img" />
+            </div>
+          </article>
+        )}
         <aside className="dash-right">
           <article className="panel">
             <div className="panel-header">
               <div className="panel-header-left">
-                <LevelIcon size={16} style={{ color: `var(--${current.level})` }} />
+                <LevelIcon size={16} style={{ color: `var(--${currentLevel})` }} />
                 <h2>위험 인자</h2>
               </div>
               <span className="score-badge">
-                <b>{current.score}</b>
+                <b>{current?.score ?? '-'}</b>
                 <span style={{ opacity: 0.55, fontSize: '0.8em' }}>/10</span>
               </span>
             </div>
             <div className="factor-list">
-              {current.factors.length ? current.factors.map(f => (
+              {current?.factors.length ? current.factors.map(f => (
                 <div className="factor-item" key={f}><AlertTriangle size={14} /><span>{f}</span></div>
               )) : (
-                <div className="factor-item calm"><CheckCircle2 size={14} /><span>감지된 위험 인자 없음</span></div>
+                <div className="factor-item calm"><CheckCircle2 size={14} /><span>{current ? '감지된 위험 인자 없음' : '서버 상태 데이터 수신 대기 중'}</span></div>
               )}
             </div>
           </article>
@@ -128,22 +135,22 @@ export function BedDetailPage() {
           <article className="panel">
             <div className="panel-header"><h2>환자 상태</h2></div>
             <dl className="state-list">
-              <div><dt>관리번호</dt><dd>{current.patientNo}</dd></div>
-              <div><dt>관리 환자</dt><dd>{current.patientName}</dd></div>
-              <div><dt>환자 위치</dt><dd>{positionLabel[current.position]}</dd></div>
-              <div><dt>자세 상태</dt><dd>{poseLabel[current.pose]}</dd></div>
+              <div><dt>관리번호</dt><dd>{current?.patientNo ?? '-'}</dd></div>
+              <div><dt>관리 환자</dt><dd>{current?.patientName ?? '-'}</dd></div>
+              <div><dt>환자 위치</dt><dd>{current ? positionLabel[current.position] : '-'}</dd></div>
+              <div><dt>자세 상태</dt><dd>{current ? poseLabel[current.pose] : '-'}</dd></div>
               <div>
                 <dt>가드레일</dt>
-                <dd style={{ color: current.guardrailUp ? 'var(--normal)' : 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {current.guardrailUp ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}
-                  {current.guardrailUp ? '올라감' : '내려감'}
+                <dd style={{ color: current?.guardrailUp ? 'var(--normal)' : 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {current?.guardrailUp ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}
+                  {current ? (current.guardrailUp ? '올라감' : '내려감') : '-'}
                 </dd>
               </div>
               <div>
                 <dt>보호 인력</dt>
-                <dd style={{ color: current.caregiverPresent ? 'var(--normal)' : 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {current.caregiverPresent ? <UserCheck size={13} /> : <UserX size={13} />}
-                  {current.caregiverPresent ? '감지됨' : '미감지'}
+                <dd style={{ color: current?.caregiverPresent ? 'var(--normal)' : 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {current?.caregiverPresent ? <UserCheck size={13} /> : <UserX size={13} />}
+                  {current ? (current.caregiverPresent ? '감지됨' : '미감지') : '-'}
                 </dd>
               </div>
             </dl>
@@ -156,6 +163,11 @@ export function BedDetailPage() {
         <article className="panel">
           <div className="panel-header"><h2>최근 이벤트</h2></div>
           <div className="event-table">
+            {history.length === 0 && (
+              <div style={{ padding: '28px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                이벤트 이력이 없습니다.
+              </div>
+            )}
             {history.map(e => (
               <div className="event-row" key={e.id} style={{ cursor: 'default' }}>
                 <span className={`event-dot ${e.level}`} style={{ flexShrink: 0 }} />
@@ -180,11 +192,17 @@ export function BedDetailPage() {
         <div className="chat-drawer-head">
           <div>
             <strong>AI 상태 질의</strong>
-            <span>{current.patientName} · {currentRoom.label}</span>
+            <span>{current?.patientName ?? bedId ?? '-'} · {pageTitle}</span>
           </div>
           <button className="chat-drawer-close" onClick={() => setChatOpen(false)}><X size={15} /></button>
         </div>
-        <QAPanel current={current} backendConnected={backendConnected} bedId={bedId} bare />
+        {current ? (
+          <QAPanel current={current} backendConnected={backendConnected} bedId={bedId} rooms={rooms} bare />
+        ) : (
+          <div className="chat-drawer-body">
+            <div className="chat-message system">서버 상태 데이터가 수신되면 AI 질의를 사용할 수 있습니다.</div>
+          </div>
+        )}
       </aside>
     </>
   );

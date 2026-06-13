@@ -8,8 +8,8 @@ import type { Snapshot } from '../../types';
 interface BackendCtx {
   backendConnected: boolean;
   setBackendConnected: (v: boolean) => void;
-  current: Snapshot;
-  setCurrent: (s: Snapshot) => void;
+  current: Snapshot | null;
+  setCurrent: (s: Snapshot | null) => void;
   events: Snapshot[];
   setEvents: React.Dispatch<React.SetStateAction<Snapshot[]>>;
   pushSnapshot: (s: Snapshot) => void;
