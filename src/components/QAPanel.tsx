@@ -92,6 +92,7 @@ function mockAnswer(question: string, current: Snapshot): string {
 export function QAPanel({ current, backendConnected, bedId, bare }: Props) {
   const room = ROOMS.find(r => r.bedIds.includes(current.bedId as never));
   const [question, setQuestion] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([
     { role: 'system', text: `${room?.label ?? current.bedId} 상태에 대해 질문하세요.\n예: "위험한 환자 있어?", "전체 현황 알려줘"` },
   ]);
@@ -102,11 +103,18 @@ export function QAPanel({ current, backendConnected, bedId, bare }: Props) {
     if (!text) return;
 
     setChat(prev => [...prev, { role: 'user', text }]);
-    const answer = backendConnected
-      ? ((await postQuestion(text, bedId)) ?? mockAnswer(text, current))
-      : mockAnswer(text, current);
-    setChat(prev => [...prev, { role: 'system', text: answer }]);
     setQuestion('');
+    setIsAsking(true);
+
+    const serverAnswer = backendConnected ? await postQuestion(text, bedId) : null;
+    const answer = serverAnswer ?? (
+      backendConnected
+        ? `AI 분석 결과를 받아오지 못해 현재 병실 상태 기준으로 답변합니다.\n${mockAnswer(text, current)}`
+        : mockAnswer(text, current)
+    );
+
+    setChat(prev => [...prev, { role: 'system', text: answer }]);
+    setIsAsking(false);
   };
 
   const content = (
@@ -123,8 +131,9 @@ export function QAPanel({ current, backendConnected, bedId, bare }: Props) {
           value={question}
           onChange={e => setQuestion(e.target.value)}
           placeholder="예: 위험한 환자 있어?"
+          disabled={isAsking}
         />
-        <button type="submit">질문</button>
+        <button type="submit" disabled={isAsking}>{isAsking ? '확인 중' : '질문'}</button>
       </form>
     </>
   );

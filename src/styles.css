@@ -1555,6 +1555,10 @@ button {
   filter: saturate(0.72) brightness(0.82) contrast(1.06);
 }
 
+.feed-badge-fallback {
+  background: rgba(15, 23, 42, 0.72);
+}
+
 /* CCTV 오버레이 */
 .feed-overlay {
   position: absolute;
@@ -1927,6 +1931,12 @@ button {
   font-weight: 700;
   transition: background 0.12s ease, transform 0.1s ease;
   white-space: nowrap;
+}
+
+.question-form input:disabled,
+.question-form button:disabled {
+  cursor: wait;
+  opacity: 0.68;
 }
 
 .question-form button:hover {
