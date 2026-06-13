@@ -1,13 +1,10 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Bell, CheckCheck, Eye, Siren, Video, WifiOff, X } from 'lucide-react';
-import { BASE_URL } from '../api/client';
-import { fetchLatestAlert } from '../api/eventsApi';
+import { Bell, CheckCheck, Siren, X } from 'lucide-react';
 import { useBackendContext, TopbarSlotContext } from '../components/layout/AppLayout';
 import { useSSE } from '../hooks/useSSE';
 import { formatTime, initialSnapshots, levelMeta, ROOMS } from '../mock/mockData';
 import type { Snapshot } from '../types';
-import type { LatestAlert } from '../api/eventsApi';
 
 /* ── 도넛 차트 ── */
 function DonutChart({ danger, caution, normal, size = 110 }: {
@@ -53,21 +50,6 @@ function DonutChart({ danger, caution, normal, size = 110 }: {
   );
 }
 
-function resolveAssetUrl(path?: string | null) {
-  if (!path) return null;
-  if (/^(https?:)?\/\//.test(path) || path.startsWith('data:')) return path;
-  const normalized = path.startsWith('/') ? path : `/${path}`;
-  return `${BASE_URL}${normalized}`;
-}
-
-function getAlertText(alert: LatestAlert | null) {
-  return alert?.status_text ?? alert?.statusText ?? alert?.summary ?? alert?.message ?? 'AI 분석 결과를 기다리는 중입니다.';
-}
-
-function getAlertTime(alert: LatestAlert | null) {
-  return alert?.createdAt ?? alert?.occurredAt ?? alert?.timestamp ?? null;
-}
-
 export function DashboardPage() {
   const { backendConnected, setBackendConnected, events, pushSnapshot } = useBackendContext();
   const { setTopbarRight } = useContext(TopbarSlotContext);
@@ -81,17 +63,8 @@ export function DashboardPage() {
   );
   const [notifOpen, setNotifOpen] = useState(false);
   const [selectedAlertId, setSelectedAlertId] = useState(events[0]?.id ?? '');
-  const [latestAlert, setLatestAlert] = useState<LatestAlert | null>(null);
-  const [alertPollingOk, setAlertPollingOk] = useState<boolean | null>(null);
-  const [streamErrored, setStreamErrored] = useState(false);
 
   const unreadCount = unreadIds.length;
-  const videoStreamSrc = `${BASE_URL}/api/video-stream`;
-  const latestAlertText = getAlertText(latestAlert);
-  const latestAlertTime = getAlertTime(latestAlert);
-  const latestSnapshotSrc = resolveAssetUrl(
-    latestAlert?.snapshot ?? latestAlert?.snapshotUrl ?? latestAlert?.snapshot_url
-  );
 
   useEffect(() => {
     setTopbarRight(
@@ -110,24 +83,6 @@ export function DashboardPage() {
   }, [pushSnapshot]);
 
   useSSE(backendConnected, onSSEEvent, () => setBackendConnected(false));
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const pollLatestAlert = async () => {
-      const alert = await fetchLatestAlert();
-      if (cancelled) return;
-      setAlertPollingOk(Boolean(alert));
-      if (alert) setLatestAlert(alert);
-    };
-
-    pollLatestAlert();
-    const timer = window.setInterval(pollLatestAlert, 2000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, []);
 
   const allSnaps = Object.values(snapshots);
   const stats = useMemo(() => ({
@@ -165,89 +120,6 @@ export function DashboardPage() {
           </button>
         </div>
       </header>
-
-      <section className="live-monitor-grid" aria-label="실시간 AI 모니터링">
-        <article className="video-panel live-video-panel">
-          <div className="panel-header">
-            <div className="panel-header-left">
-              <Video size={17} />
-              <h2>Jetson 실시간 영상</h2>
-            </div>
-            <span className={streamErrored ? 'stream-status disconnected' : 'stream-status'}>
-              {streamErrored ? <WifiOff size={13} /> : <Activity size={13} />}
-              {streamErrored ? '연결 확인 필요' : 'LIVE'}
-            </span>
-          </div>
-
-          <div className="video-feed live-mjpeg-feed normal">
-            <img
-              src={videoStreamSrc}
-              alt="Jetson Orin Nano 실시간 병실 카메라 영상"
-              className="feed-img live-feed-img"
-              onLoad={() => setStreamErrored(false)}
-              onError={() => setStreamErrored(true)}
-            />
-            <div className="feed-overlay">
-              <div className="feed-overlay-left">
-                <span className="feed-badge feed-badge-rec">● REC</span>
-                <span className="feed-badge">
-                  <Eye size={11} />
-                  /api/video-stream
-                </span>
-              </div>
-              <span className="feed-badge">MJPEG</span>
-            </div>
-            {streamErrored && (
-              <div className="stream-error-overlay">
-                <WifiOff size={22} />
-                <span>영상 스트림을 불러올 수 없습니다.</span>
-              </div>
-            )}
-          </div>
-        </article>
-
-        <article className="panel live-analysis-panel">
-          <div className="panel-header">
-            <div className="panel-header-left">
-              <Siren size={17} />
-              <h2>AI 분석 결과</h2>
-            </div>
-            <span className={alertPollingOk === false ? 'stream-status disconnected' : 'stream-status'}>
-              {alertPollingOk === false ? <WifiOff size={13} /> : <Activity size={13} />}
-              {alertPollingOk === false ? '수신 대기' : 'POLLING'}
-            </span>
-          </div>
-
-          <div className="live-analysis-body">
-            <div className="analysis-text-box">
-              <span className="analysis-label">status_text</span>
-              <p>{latestAlertText}</p>
-            </div>
-
-            <dl className="analysis-meta">
-              <div>
-                <dt>업데이트</dt>
-                <dd>{latestAlertTime ? formatTime(latestAlertTime) : '-'}</dd>
-              </div>
-              <div>
-                <dt>조회 주기</dt>
-                <dd>2초</dd>
-              </div>
-              <div>
-                <dt>엔드포인트</dt>
-                <dd>/api/alerts/latest</dd>
-              </div>
-            </dl>
-
-            {latestSnapshotSrc && (
-              <div className="analysis-snapshot">
-                <span>분석 스냅샷</span>
-                <img src={latestSnapshotSrc} alt="AI 분석 시점 캡처" />
-              </div>
-            )}
-          </div>
-        </article>
-      </section>
 
       {/* 전체 현황 — 도넛 차트 */}
       <div className="dash-stats">

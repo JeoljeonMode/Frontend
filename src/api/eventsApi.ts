@@ -24,20 +24,6 @@ export interface BackendEvent {
 
 export interface BedStatus { bedId: string; status: BackendEvent; }
 
-export interface LatestAlert {
-  id?: string;
-  status_text?: string;
-  statusText?: string;
-  summary?: string;
-  message?: string;
-  snapshot?: string | null;
-  snapshotUrl?: string | null;
-  snapshot_url?: string | null;
-  createdAt?: string;
-  occurredAt?: string;
-  timestamp?: string;
-}
-
 export function toSnapshot(event: BackendEvent): Snapshot {
   return {
     id: event.id, bedId: event.bedId, cameraId: event.cameraId,
@@ -98,14 +84,6 @@ export async function fetchBeds(): Promise<BedStatus[]> {
     console.log(`[API] GET /api/beds → ${data.length}개 병상`);
     return data;
   } catch (e) { console.warn('[API] GET /api/beds 실패', e); return []; }
-}
-
-export async function fetchLatestAlert(): Promise<LatestAlert | null> {
-  try {
-    const res = await apiFetch('/api/alerts/latest', { signal: AbortSignal.timeout(3000) });
-    if (!res.ok) { console.warn('[API] GET /api/alerts/latest 실패:', res.status); return null; }
-    return await res.json() as LatestAlert;
-  } catch (e) { console.warn('[API] GET /api/alerts/latest 실패', e); return null; }
 }
 
 export async function postDemoEvent(): Promise<BackendEvent | null> {
