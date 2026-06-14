@@ -1,6 +1,6 @@
 import { Eye } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { BASE_URL } from '../api/client';
+import { BASE_URL, getToken } from '../api/client';
 import { fallbackRooms, type AppRoom } from '../api/roomsApi';
 import type { Snapshot } from '../types';
 import { formatTime, levelMeta } from '../mock/mockData';
@@ -14,7 +14,10 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
   const wardImage = rooms.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
   const [streamFailed, setStreamFailed] = useState(false);
   const streamSrc = useMemo(() => {
-    return `${BASE_URL}/api/ai/video-stream`;
+    const token = getToken();
+    return token
+      ? `${BASE_URL}/api/ai/video-stream?token=${encodeURIComponent(token)}`
+      : `${BASE_URL}/api/ai/video-stream`;
   }, []);
   const feedSrc = streamFailed ? wardImage : streamSrc;
 

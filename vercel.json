@@ -7,6 +7,10 @@
     {
       "source": "/sse/:path*",
       "destination": "http://ec2-13-222-12-86.compute-1.amazonaws.com:8080/sse/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ]
 }
