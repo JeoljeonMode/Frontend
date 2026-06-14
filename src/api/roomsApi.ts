@@ -14,6 +14,7 @@ export interface AppRoom {
   cameraId: string;
   gender: string;
   capacity: number;
+  cameraEnabled: boolean;
   bedIds: string[];
   image: string;
 }
@@ -30,6 +31,7 @@ export async function fetchRooms(): Promise<AppRoom[]> {
       cameraId: room.cameraId,
       gender: room.gender,
       capacity: room.capacity,
+      cameraEnabled: room.cameraEnabled,
       bedIds: room.bedIds ?? [],
       image: roomImages[index % roomImages.length],
     }));

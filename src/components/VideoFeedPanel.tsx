@@ -11,27 +11,40 @@ interface Props {
 }
 
 export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
-  const wardImage = rooms.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
+  const currentRoom = rooms.find(r => r.cameraId === current.cameraId || r.bedIds.includes(current.bedId));
+  const wardImage = currentRoom?.image ?? '/ward1.png';
+  const cameraEnabled = currentRoom?.cameraEnabled ?? false;
   const [streamFailed, setStreamFailed] = useState(false);
   const [streamLoaded, setStreamLoaded] = useState(false);
   const streamLoadedRef = useRef(false);
   const streamSrc = useMemo(() => {
+    if (!cameraEnabled || !currentRoom) return wardImage;
     const token = getToken();
-    return token
-      ? `${BASE_URL}/api/ai/video-stream?token=${encodeURIComponent(token)}`
-      : `${BASE_URL}/api/ai/video-stream`;
-  }, []);
-  const feedSrc = streamFailed ? wardImage : streamSrc;
+    const params = new URLSearchParams({ roomId: currentRoom.id });
+    if (token) params.set('token', token);
+    return `${BASE_URL}/api/video-stream?${params}`;
+  }, [cameraEnabled, currentRoom, wardImage]);
+  const feedSrc = streamFailed || !cameraEnabled ? wardImage : streamSrc;
 
   useEffect(() => {
     setStreamFailed(false);
     setStreamLoaded(false);
     streamLoadedRef.current = false;
-  }, [current.cameraId, current.bedId]);
+  }, [current.cameraId, current.bedId, cameraEnabled]);
 
   useEffect(() => {
+    if (!cameraEnabled) {
+      console.log('[VideoFeed] 카메라 미연동 병실, 정적 이미지 표시:', {
+        roomId: currentRoom?.id,
+        cameraId: current.cameraId,
+        bedId: current.bedId,
+      });
+      return;
+    }
+
     if (streamFailed) {
       console.warn('[VideoFeed] fallback 이미지 표시:', {
+        roomId: currentRoom?.id,
         cameraId: current.cameraId,
         bedId: current.bedId,
         fallbackSrc: wardImage,
@@ -40,6 +53,7 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
     }
 
     console.log('[VideoFeed] 스트림 연결 시도:', {
+      roomId: currentRoom?.id,
       cameraId: current.cameraId,
       bedId: current.bedId,
       src: streamSrc,
@@ -48,6 +62,7 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
     const timer = window.setTimeout(() => {
       if (streamLoadedRef.current) return;
       console.warn('[VideoFeed] 5초 내 첫 프레임 미수신, fallback 전환:', {
+        roomId: currentRoom?.id,
         cameraId: current.cameraId,
         bedId: current.bedId,
       });
@@ -55,7 +70,7 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
     }, 5000);
 
     return () => window.clearTimeout(timer);
-  }, [current.cameraId, current.bedId, streamFailed, streamSrc, wardImage]);
+  }, [cameraEnabled, currentRoom?.id, current.cameraId, current.bedId, streamFailed, streamSrc, wardImage]);
 
   return (
     <article className="video-panel" id="live">
@@ -71,27 +86,31 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
           className="feed-img"
           onLoad={() => {
             console.log('[VideoFeed] 이미지 로드 완료:', {
-              mode: streamFailed ? 'fallback' : 'stream',
+              mode: !cameraEnabled ? 'static' : streamFailed ? 'fallback' : 'stream',
+              roomId: currentRoom?.id,
               cameraId: current.cameraId,
               bedId: current.bedId,
             });
-            if (streamFailed) return;
+            if (streamFailed || !cameraEnabled) return;
             streamLoadedRef.current = true;
             setStreamLoaded(true);
             setStreamFailed(false);
           }}
           onError={() => {
             console.warn('[VideoFeed] 이미지 로드 실패, fallback 전환:', {
+              roomId: currentRoom?.id,
               cameraId: current.cameraId,
               bedId: current.bedId,
               src: feedSrc,
             });
-            setStreamFailed(true);
+            if (cameraEnabled) setStreamFailed(true);
           }}
         />
         <div className="feed-overlay">
           <div className="feed-overlay-left">
-            <span className="feed-badge feed-badge-rec">● REC</span>
+            <span className={cameraEnabled ? 'feed-badge feed-badge-rec' : 'feed-badge feed-badge-off'}>
+              {cameraEnabled ? '● REC' : '카메라 미연동'}
+            </span>
             <span className="feed-badge">
               <Eye size={11} />
               {current.cameraId} · WARD A

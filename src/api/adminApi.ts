@@ -31,6 +31,7 @@ export interface AdminRoom {
   cameraId: string;
   gender: string;
   capacity: number;
+  cameraEnabled: boolean;
   bedIds?: string[];
 }
 
@@ -112,6 +113,7 @@ export async function fetchAdminRooms(): Promise<AdminRoom[]> {
         cameraId: String(item.cameraId ?? ''),
         gender: String(item.gender ?? ''),
         capacity: Number(item.capacity ?? bedIds?.length ?? 0),
+        cameraEnabled: Boolean(item.cameraEnabled ?? item.camera_enabled ?? false),
         bedIds,
       };
     });
