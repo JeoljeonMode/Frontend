@@ -68,18 +68,22 @@ export interface AiStatusResponse {
   acknowledged_at?: string | null;
 }
 
-function normalizeRiskLevel(value?: string): 'NORMAL' | 'CAUTION' | 'DANGER' {
+function normalizeRiskLevel(value?: string, score = 0, text = ''): 'NORMAL' | 'CAUTION' | 'DANGER' {
   const normalized = value?.toUpperCase();
   if (normalized === 'DANGER' || normalized === 'CAUTION' || normalized === 'NORMAL') return normalized;
+  if (text.includes('위험') || text.toUpperCase().includes('DANGER')) return 'DANGER';
+  if (text.includes('주의') || text.toUpperCase().includes('CAUTION')) return 'CAUTION';
+  if (score >= 6) return 'DANGER';
+  if (score >= 3) return 'CAUTION';
   return 'NORMAL';
 }
 
 export function aiStatusToBackendEvent(status: AiStatusResponse): BackendEvent {
   const riskScore = Number(status.riskScore ?? status.risk_score ?? status.score ?? 0);
-  const riskLevel = normalizeRiskLevel(status.riskLevel ?? status.risk_level);
   const patientPosition = status.patientPosition ?? status.patient_position ?? 'center';
   const posture = status.posture ?? status.pose ?? 'lying';
   const summary = status.summary ?? status.statusText ?? status.status_text ?? status.message ?? 'AI 상태 분석 결과를 수신했습니다.';
+  const riskLevel = normalizeRiskLevel(status.riskLevel ?? status.risk_level, riskScore, summary);
 
   return {
     id: status.id ?? `ai-status-${Date.now()}`,
@@ -103,17 +107,22 @@ export function aiStatusToBackendEvent(status: AiStatusResponse): BackendEvent {
   };
 }
 
-export function toSnapshot(event: BackendEvent): Snapshot {
+function isAiStatusLike(event: BackendEvent | AiStatusResponse): event is AiStatusResponse {
+  return !('riskFactors' in event) || !('patientPosition' in event) || 'risk_level' in event || 'status_text' in event || 'risk_score' in event;
+}
+
+export function toSnapshot(event: BackendEvent | AiStatusResponse): Snapshot {
+  const normalized = isAiStatusLike(event) ? aiStatusToBackendEvent(event) : event;
   return {
-    id: event.id, bedId: event.bedId, cameraId: event.cameraId,
-    patientName: event.patientName, patientNo: event.patientNo || event.bedId,
-    timestamp: event.occurredAt,
-    position: event.patientPosition as PatientPosition,
-    pose: event.posture as PoseStatus, guardrailUp: event.guardrailUp,
-    caregiverPresent: event.caregiverPresent, score: event.riskScore,
-    level: event.riskLevel.toLowerCase() as RiskLevel,
-    factors: event.riskFactors, summary: event.summary,
-    acknowledged: event.acknowledged,
+    id: normalized.id, bedId: normalized.bedId, cameraId: normalized.cameraId,
+    patientName: normalized.patientName, patientNo: normalized.patientNo || normalized.bedId,
+    timestamp: normalized.occurredAt,
+    position: normalized.patientPosition as PatientPosition,
+    pose: normalized.posture as PoseStatus, guardrailUp: normalized.guardrailUp,
+    caregiverPresent: normalized.caregiverPresent, score: normalized.riskScore,
+    level: normalized.riskLevel.toLowerCase() as RiskLevel,
+    factors: normalized.riskFactors, summary: normalized.summary,
+    acknowledged: normalized.acknowledged,
   };
 }
 

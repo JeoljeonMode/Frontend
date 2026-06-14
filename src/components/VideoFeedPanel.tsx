@@ -1,5 +1,5 @@
 import { Eye } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BASE_URL, getToken } from '../api/client';
 import { fallbackRooms, type AppRoom } from '../api/roomsApi';
 import type { Snapshot } from '../types';
@@ -13,6 +13,8 @@ interface Props {
 export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
   const wardImage = rooms.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
   const [streamFailed, setStreamFailed] = useState(false);
+  const [streamLoaded, setStreamLoaded] = useState(false);
+  const streamLoadedRef = useRef(false);
   const streamSrc = useMemo(() => {
     const token = getToken();
     return token
@@ -23,7 +25,37 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
 
   useEffect(() => {
     setStreamFailed(false);
+    setStreamLoaded(false);
+    streamLoadedRef.current = false;
   }, [current.cameraId, current.bedId]);
+
+  useEffect(() => {
+    if (streamFailed) {
+      console.warn('[VideoFeed] fallback 이미지 표시:', {
+        cameraId: current.cameraId,
+        bedId: current.bedId,
+        fallbackSrc: wardImage,
+      });
+      return;
+    }
+
+    console.log('[VideoFeed] 스트림 연결 시도:', {
+      cameraId: current.cameraId,
+      bedId: current.bedId,
+      src: streamSrc,
+    });
+
+    const timer = window.setTimeout(() => {
+      if (streamLoadedRef.current) return;
+      console.warn('[VideoFeed] 5초 내 첫 프레임 미수신, fallback 전환:', {
+        cameraId: current.cameraId,
+        bedId: current.bedId,
+      });
+      setStreamFailed(true);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [current.cameraId, current.bedId, streamFailed, streamSrc, wardImage]);
 
   return (
     <article className="video-panel" id="live">
@@ -38,10 +70,24 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
           alt="병실 카메라 피드"
           className="feed-img"
           onLoad={() => {
+            console.log('[VideoFeed] 이미지 로드 완료:', {
+              mode: streamFailed ? 'fallback' : 'stream',
+              cameraId: current.cameraId,
+              bedId: current.bedId,
+            });
             if (streamFailed) return;
+            streamLoadedRef.current = true;
+            setStreamLoaded(true);
             setStreamFailed(false);
           }}
-          onError={() => setStreamFailed(true)}
+          onError={() => {
+            console.warn('[VideoFeed] 이미지 로드 실패, fallback 전환:', {
+              cameraId: current.cameraId,
+              bedId: current.bedId,
+              src: feedSrc,
+            });
+            setStreamFailed(true);
+          }}
         />
         <div className="feed-overlay">
           <div className="feed-overlay-left">
