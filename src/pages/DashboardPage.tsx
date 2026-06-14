@@ -1,9 +1,8 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck, Siren, X } from 'lucide-react';
 import { fetchBeds, toSnapshot } from '../api/eventsApi';
 import { useBackendContext, TopbarSlotContext } from '../components/layout/AppLayout';
-import { useSSE } from '../hooks/useSSE';
 import { useRooms } from '../hooks/useRooms';
 import { formatTime, levelMeta } from '../mock/mockData';
 import type { Snapshot } from '../types';
@@ -53,7 +52,7 @@ function DonutChart({ danger, caution, normal, size = 110 }: {
 }
 
 export function DashboardPage() {
-  const { backendConnected, setBackendConnected, events, pushSnapshot } = useBackendContext();
+  const { events } = useBackendContext();
   const { setTopbarRight } = useContext(TopbarSlotContext);
   const navigate = useNavigate();
   const { rooms } = useRooms();
@@ -75,20 +74,21 @@ export function DashboardPage() {
     return () => setTopbarRight(null);
   }, [unreadCount, setTopbarRight]);
 
-  const onSSEEvent = useCallback((snap: Snapshot) => {
-    pushSnapshot(snap);
-    setSnapshots(prev => ({ ...prev, [snap.bedId]: snap }));
-    if (snap.level !== 'normal') setUnreadIds(p => [snap.id, ...p].slice(0, 12));
-  }, [pushSnapshot]);
-
-  useSSE(backendConnected, onSSEEvent, () => setBackendConnected(false));
-
   useEffect(() => {
     (async () => {
       const beds = await fetchBeds();
       setSnapshots(Object.fromEntries(beds.map(b => [b.bedId, toSnapshot(b.status)])));
     })();
   }, []);
+
+  useEffect(() => {
+    const latest = events[0];
+    if (!latest) return;
+    setSnapshots(prev => ({ ...prev, [latest.bedId]: latest }));
+    if (latest.level !== 'normal') setUnreadIds(p => (
+      p.includes(latest.id) ? p : [latest.id, ...p].slice(0, 12)
+    ));
+  }, [events]);
 
   const allSnaps = Object.values(snapshots);
   const stats = useMemo(() => ({

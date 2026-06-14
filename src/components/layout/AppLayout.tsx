@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
 import { useBackend } from '../../hooks/useBackend';
+import { useSSE } from '../../hooks/useSSE';
 import { Sidebar } from './Sidebar';
 import type { Snapshot } from '../../types';
 
@@ -34,6 +35,8 @@ export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [topbarRight, setTopbarRight] = useState<React.ReactNode>(null);
+
+  useSSE(backend.backendConnected, backend.pushSnapshot, () => backend.setBackendConnected(false));
 
   return (
     <BackendContext.Provider value={backend}>

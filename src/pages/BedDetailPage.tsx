@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, MessageCircle, ShieldAlert, ShieldCheck, UserCheck, UserX, X } from 'lucide-react';
 import { fetchBeds, fetchEvents, toSnapshot } from '../api/eventsApi';
@@ -6,14 +6,13 @@ import { VideoFeedPanel } from '../components/VideoFeedPanel';
 import { QAPanel } from '../components/QAPanel';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { useBackendContext } from '../components/layout/AppLayout';
-import { useSSE } from '../hooks/useSSE';
 import { useRooms } from '../hooks/useRooms';
 import { formatTime, levelMeta, poseLabel, positionLabel } from '../mock/mockData';
 import type { Snapshot } from '../types';
 
 export function BedDetailPage() {
   const { bedId } = useParams<{ bedId: string }>();
-  const { backendConnected, setBackendConnected } = useBackendContext();
+  const { backendConnected, events } = useBackendContext();
   const navigate = useNavigate();
   const { rooms } = useRooms();
 
@@ -36,15 +35,17 @@ export function BedDetailPage() {
     })();
   }, [bedId]);
 
-  const onSSEEvent = useCallback((snap: Snapshot) => {
-    setSnapshots(prev => ({ ...prev, [snap.bedId]: snap }));
-    if (snap.bedId === bedId) {
-      setCurrent(snap);
-      setHistory(prev => [snap, ...prev].slice(0, 10));
+  useEffect(() => {
+    const latest = events[0];
+    if (!latest) return;
+    setSnapshots(prev => ({ ...prev, [latest.bedId]: latest }));
+    if (latest.bedId === bedId) {
+      setCurrent(latest);
+      setHistory(prev => (
+        prev.some(item => item.id === latest.id) ? prev : [latest, ...prev].slice(0, 10)
+      ));
     }
-  }, [bedId]);
-
-  useSSE(backendConnected, onSSEEvent, () => setBackendConnected(false));
+  }, [bedId, events]);
 
   const currentLevel = current?.level ?? 'normal';
   const LevelIcon = levelMeta[currentLevel].icon;
