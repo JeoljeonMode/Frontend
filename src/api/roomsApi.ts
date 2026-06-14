@@ -1,6 +1,12 @@
-import { fetchAdminRooms } from './adminApi';
+import { fetchAdminRooms } from "./adminApi";
 
-const roomImages = ['/ward1.png', '/ward2.png', '/ward3.png', '/ward4.png', '/ward5.png'];
+const roomImages = [
+  "/ward1.png",
+  "/ward2.png",
+  "/ward3.png",
+  "/ward4.png",
+  "/ward5.png",
+];
 
 export interface AppRoom {
   id: string;
