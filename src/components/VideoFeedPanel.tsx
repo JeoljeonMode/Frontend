@@ -14,9 +14,8 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
   const wardImage = rooms.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
   const [streamFailed, setStreamFailed] = useState(false);
   const streamSrc = useMemo(() => {
-    const params = new URLSearchParams({ cameraId: current.cameraId, bedId: current.bedId });
-    return `${BASE_URL}/api/video-stream?${params}`;
-  }, [current.cameraId, current.bedId]);
+    return `${BASE_URL}/api/ai/video-stream`;
+  }, []);
   const feedSrc = streamFailed ? wardImage : streamSrc;
 
   useEffect(() => {

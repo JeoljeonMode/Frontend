@@ -24,6 +24,85 @@ export interface BackendEvent {
 
 export interface BedStatus { bedId: string; status: BackendEvent; }
 
+export interface AiStatusResponse {
+  id?: string;
+  occurredAt?: string;
+  occurred_at?: string;
+  createdAt?: string;
+  created_at?: string;
+  timestamp?: string;
+  cameraId?: string;
+  camera_id?: string;
+  bedId?: string;
+  bed_id?: string;
+  patientName?: string;
+  patient_name?: string;
+  patientNo?: string;
+  patient_no?: string;
+  patientPosition?: string;
+  patient_position?: string;
+  posture?: string;
+  pose?: string;
+  guardrailUp?: boolean;
+  guardrail_up?: boolean;
+  caregiverPresent?: boolean;
+  caregiver_present?: boolean;
+  riskScore?: number;
+  risk_score?: number;
+  score?: number;
+  riskLevel?: 'NORMAL' | 'CAUTION' | 'DANGER' | string;
+  risk_level?: 'NORMAL' | 'CAUTION' | 'DANGER' | string;
+  riskLabel?: string;
+  risk_label?: string;
+  riskFactors?: string[];
+  risk_factors?: string[];
+  factors?: string[];
+  summary?: string;
+  statusText?: string;
+  status_text?: string;
+  message?: string;
+  frameUrl?: string | null;
+  frame_url?: string | null;
+  acknowledged?: boolean;
+  acknowledgedAt?: string | null;
+  acknowledged_at?: string | null;
+}
+
+function normalizeRiskLevel(value?: string): 'NORMAL' | 'CAUTION' | 'DANGER' {
+  const normalized = value?.toUpperCase();
+  if (normalized === 'DANGER' || normalized === 'CAUTION' || normalized === 'NORMAL') return normalized;
+  return 'NORMAL';
+}
+
+export function aiStatusToBackendEvent(status: AiStatusResponse): BackendEvent {
+  const riskScore = Number(status.riskScore ?? status.risk_score ?? status.score ?? 0);
+  const riskLevel = normalizeRiskLevel(status.riskLevel ?? status.risk_level);
+  const patientPosition = status.patientPosition ?? status.patient_position ?? 'center';
+  const posture = status.posture ?? status.pose ?? 'lying';
+  const summary = status.summary ?? status.statusText ?? status.status_text ?? status.message ?? 'AI 상태 분석 결과를 수신했습니다.';
+
+  return {
+    id: status.id ?? `ai-status-${Date.now()}`,
+    occurredAt: status.occurredAt ?? status.occurred_at ?? status.createdAt ?? status.created_at ?? status.timestamp ?? new Date().toISOString(),
+    cameraId: status.cameraId ?? status.camera_id ?? 'AI-CAM',
+    bedId: status.bedId ?? status.bed_id ?? 'AI-STATUS',
+    patientName: status.patientName ?? status.patient_name ?? 'AI 분석 대상',
+    patientNo: status.patientNo ?? status.patient_no ?? '-',
+    patientPosition,
+    posture,
+    guardrailUp: status.guardrailUp ?? status.guardrail_up ?? true,
+    caregiverPresent: status.caregiverPresent ?? status.caregiver_present ?? false,
+    riskScore,
+    riskLevel,
+    riskLabel: status.riskLabel ?? status.risk_label ?? riskLevel,
+    riskFactors: status.riskFactors ?? status.risk_factors ?? status.factors ?? [],
+    summary,
+    frameUrl: status.frameUrl ?? status.frame_url ?? null,
+    acknowledged: status.acknowledged ?? false,
+    acknowledgedAt: status.acknowledgedAt ?? status.acknowledged_at ?? null,
+  };
+}
+
 export function toSnapshot(event: BackendEvent): Snapshot {
   return {
     id: event.id, bedId: event.bedId, cameraId: event.cameraId,
@@ -40,12 +119,13 @@ export function toSnapshot(event: BackendEvent): Snapshot {
 
 export async function fetchCurrentStatus(): Promise<BackendEvent | null> {
   try {
-    const res = await apiFetch('/api/status/current', { signal: AbortSignal.timeout(3000) });
-    if (!res.ok) { console.warn('[API] GET /api/status/current 실패:', res.status); return null; }
-    const data = await res.json() as BackendEvent;
-    console.log('[API] GET /api/status/current →', data.riskLevel, `(${data.riskScore}점)`);
-    return data;
-  } catch (e) { console.warn('[API] GET /api/status/current 실패', e); return null; }
+    const res = await apiFetch('/api/ai/status', { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) { console.warn('[API] GET /api/ai/status 실패:', res.status); return null; }
+    const data = await res.json() as AiStatusResponse;
+    const event = aiStatusToBackendEvent(data);
+    console.log('[API] GET /api/ai/status →', event.riskLevel, `(${event.riskScore}점)`);
+    return event;
+  } catch (e) { console.warn('[API] GET /api/ai/status 실패', e); return null; }
 }
 
 export async function fetchEvents(limit = 20, bedId?: string, riskLevel?: string, acknowledged?: boolean): Promise<BackendEvent[]> {
