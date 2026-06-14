@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://ec2-3-236-103-141.compute-1.amazonaws.com:8080/api/:path*"
+      "destination": "http://ec2-98-93-176-71.compute-1.amazonaws.com:8080/api/:path*"
     },
     {
       "source": "/sse/:path*",
-      "destination": "http://ec2-3-236-103-141.compute-1.amazonaws.com:8080/sse/:path*"
+      "destination": "http://ec2-98-93-176-71.compute-1.amazonaws.com:8080/sse/:path*"
     },
     {
       "source": "/:path*",
