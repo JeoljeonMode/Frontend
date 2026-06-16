@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BASE_URL, getToken } from '../api/client';
 import { fallbackRooms, type AppRoom } from '../api/roomsApi';
 import type { Snapshot } from '../types';
-import { formatTime, levelMeta } from '../mock/mockData';
+import { levelMeta } from '../mock/mockData';
 
 interface Props {
   current: Snapshot;
@@ -12,6 +12,7 @@ interface Props {
 
 export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
   const wardImage = rooms.find(r => r.cameraId === current.cameraId)?.image ?? '/ward1.png';
+  const [now, setNow] = useState(() => new Date());
   const [streamFailed, setStreamFailed] = useState(false);
   const [streamLoaded, setStreamLoaded] = useState(false);
   const streamLoadedRef = useRef(false);
@@ -22,6 +23,11 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
       : `${BASE_URL}/api/ai/video-stream`;
   }, []);
   const feedSrc = streamFailed ? wardImage : streamSrc;
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     setStreamFailed(false);
@@ -97,7 +103,7 @@ export function VideoFeedPanel({ current, rooms = fallbackRooms }: Props) {
               {current.cameraId} · WARD A
             </span>
           </div>
-          <span className="feed-badge">{formatTime(current.timestamp)} KST</span>
+          <span className="feed-badge">{now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} KST</span>
         </div>
       </div>
     </article>
